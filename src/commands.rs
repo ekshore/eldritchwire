@@ -7,7 +7,7 @@ pub enum Command {
     Lens(LensCommand),
 }
 
-pub fn parse_command(cmd_category: usize, cmd_buffer: &[u8]) -> Command {
+pub fn parse_command(cmd_category: u8, cmd_buffer: &[u8]) -> Command {
     match cmd_category {
         0x00 => Command::Lens(lens_commands::parse_lens_command(cmd_buffer)),
         _ => todo!("Command category has either not been implemented or is invalid"),
