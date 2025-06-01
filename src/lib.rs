@@ -33,6 +33,7 @@ pub enum Operation {
     Toggle,
 }
 
+#[derive(Debug, PartialEq)]
 struct PacketData {
     data: Vec<u8>,
     cursor: u8,
@@ -71,7 +72,7 @@ impl PacketData {
             .get((self.cursor + 2) as usize)
             .ok_or(EldritchError::InvalidHeader)?;
 
-        if let Some(reserved) = self.data.get((self.cursor + 3) as usize) {
+        let header = if let Some(reserved) = self.data.get((self.cursor + 3) as usize) {
             if *reserved == 0 {
                 Ok(CommandHeader {
                     device_id: *device_id,
@@ -83,36 +84,49 @@ impl PacketData {
             }
         } else {
             Err(EldritchError::InvalidHeader)
-        }
+        };
+        self.cursor = self.cursor + 4;
+        header
     }
 
     fn has_data(&self) -> bool {
-        usize::from(self.cursor) < self.data.len() || self.cursor < 255
+        usize::from(self.cursor) < self.data.len()
     }
 
     fn get_slice(&mut self, slice_len: u8) -> Result<&[u8], EldritchError> {
         let new_cur = self.cursor + slice_len;
         if usize::from(new_cur) > self.data.len() {
-            todo!();
+            return Err(EldritchError::EndOfPacket);
         }
-        !todo!();
+        let slice_data = &self.data[usize::from(self.cursor)..usize::from(new_cur)];
+        self.cursor = new_cur;
+        Ok(slice_data)
     }
 }
 
 pub fn parse_packet(data: Vec<u8>) -> Result<Vec<Command>, EldritchError> {
     let mut packet = PacketData::new(data)?;
+    let mut commands: Vec<Command> = Vec::new();
 
     while packet.has_data() {
         let header = packet.parse_header()?;
 
         let command_data = packet.get_slice(header.command_length)?;
-        let command = commands::parse_command(header.command_id, command_data);
+        commands.push(commands::parse_command(header.command_id, command_data));
 
-        let padding = packet.get_slice(header.command_length % 4)?;
+        let padding = packet.get_slice(calculate_padding_length(header.command_length))?;
         verify_padding(padding, header.command_length)?;
     }
 
     Ok(vec![])
+}
+
+fn calculate_padding_length(command_length: u8) -> u8 {
+    if command_length % 4 == 0 {
+        0
+    } else {
+        4 - (command_length % 4)
+    }
 }
 
 fn verify_padding(padding: &[u8], command_length: u8) -> Result<(), EldritchError> {
@@ -219,12 +233,82 @@ mod packet_data_test {
             0x00, 0x00, 0x00, // Padding
         ];
 
-        let mut packet =
-            PacketData::new(packet_data).expect("Failed to build PacketData with known good data");
+        let mut packet = PacketData::new(packet_data).expect("Verified packet data");
 
-        match packet.parse_header() {
-            Ok(_) => assert!(false),
-            Err(error) => assert_eq!(error, EldritchError::InvalidHeader),
+        if let Err(error) = packet.parse_header() {
+            assert_eq!(error, EldritchError::InvalidHeader);
+            assert_eq!(4, packet.cursor);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn has_data_true() {
+        let packet_data = vec![
+            0x00, 0x05, 0x00, 0xFF, // Header
+            0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, 0x00, // Padding
+        ];
+
+        let mut packet = PacketData::new(packet_data).expect("Verified packet data");
+        packet.cursor = 10;
+        println!("Packet: {:?}", packet);
+        assert!(packet.has_data());
+    }
+
+    #[test]
+    fn has_data_false() {
+        let packet_data = vec![
+            0x00, 0x05, 0x00, 0xFF, // Header
+            0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, 0x00, // Padding
+        ];
+
+        let mut packet = PacketData::new(packet_data).expect("Verified packet data");
+        packet.cursor = 12;
+        println!("Packet: {:?}", packet);
+        assert!(!packet.has_data());
+    }
+
+    #[test]
+    fn get_slice() {
+        let packet_data = vec![
+            0x00, 0x05, 0x00, 0xFF, // Header
+            0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, 0x00, // Padding
+        ];
+        let mut packet = PacketData::new(packet_data).expect("Verified packet data");
+        packet.cursor = 4;
+
+        if let Ok(cmd_data) = packet.get_slice(5) {
+            assert_eq!([0x00, 0x80, 0x01, 0x9a, 0xfd,] as [u8; 5], cmd_data);
+            assert_eq!(9, packet.cursor);
+        } else {
+            assert!(false);
+        }
+        if let Ok(padding) = packet.get_slice(calculate_padding_length(5)) {
+            assert_eq!([0x00, 0x00, 0x00] as [u8; 3], padding);
+            assert_eq!(12, packet.cursor);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn get_slice_error() {
+        let packet_data = vec![
+            0x00, 0x05, 0x00, 0xFF, // Header
+            0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, 0x00, // Padding
+        ];
+        let mut packet = PacketData::new(packet_data).expect("Verified packet data");
+        packet.cursor = 8;
+
+        if let Err(error) = packet.get_slice(5) {
+            assert_eq!(EldritchError::EndOfPacket, error);
+        } else {
+            assert!(false);
         }
     }
 }
@@ -232,6 +316,30 @@ mod packet_data_test {
 #[cfg(test)]
 mod lib_test {
     use super::*;
+
+    #[test]
+    fn calculate_padding_length_no_padding() {
+        assert_eq!(0 as u8, calculate_padding_length(8));
+        assert_eq!(0 as u8, calculate_padding_length(4));
+    }
+
+    #[test]
+    fn calculate_padding_length_one() {
+        assert_eq!(1 as u8, calculate_padding_length(3));
+        assert_eq!(1 as u8, calculate_padding_length(7));
+    }
+
+    #[test]
+    fn calculate_padding_length_two() {
+        assert_eq!(2 as u8, calculate_padding_length(2));
+        assert_eq!(2 as u8, calculate_padding_length(6));
+    }
+
+    #[test]
+    fn calculate_padding_length_three() {
+        assert_eq!(3 as u8, calculate_padding_length(1));
+        assert_eq!(3 as u8, calculate_padding_length(5));
+    }
 
     #[test]
     fn verify_padding_success() {
