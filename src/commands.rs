@@ -1,4 +1,4 @@
-mod lens_commands;
+pub mod lens_commands;
 
 use lens_commands::LensCommand;
 

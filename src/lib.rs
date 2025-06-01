@@ -118,7 +118,7 @@ pub fn parse_packet(data: Vec<u8>) -> Result<Vec<Command>, EldritchError> {
         verify_padding(padding, header.command_length)?;
     }
 
-    Ok(vec![])
+    Ok(commands)
 }
 
 fn calculate_padding_length(command_length: u8) -> u8 {
@@ -316,6 +316,71 @@ mod packet_data_test {
 #[cfg(test)]
 mod lib_test {
     use super::*;
+    use crate::commands::{Command, lens_commands::LensCommand};
+
+    #[test]
+    fn parse_packet_single_command() {
+        let packet_data = vec![
+            0x00, 0x05, 0x00, 0x00, // Header
+            0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, 0x00, // Padding
+        ];
+
+        if let Ok(commands) = parse_packet(packet_data) {
+            println!("parse_packet_single_command() commands: {:?}", commands);
+            assert_eq!(1, commands.len());
+            assert_eq!(
+                Command::Lens(LensCommand::Focus(
+                    Operation::Increment,
+                    FixedPointDecimal {
+                        raw_val: 0xfd9au16 as i16
+                    }
+                )),
+                *commands.get(0).expect("Length asserted to be one")
+            );
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn parse_packet_two_commands() {
+        let packet_data = vec![
+            0x00, 0x05, 0x00, 0x00, // Header
+            0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, 0x00, // Padding
+            0x00, 0x05, 0x00, 0x00, // Header
+            0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, 0x00, // Padding
+        ];
+
+        if let Ok(commands) = parse_packet(packet_data) {
+            println!("parse_packet_single_command() commands: {:?}", commands);
+            assert_eq!(2, commands.len());
+            assert_eq!(
+                Command::Lens(LensCommand::Focus(
+                    Operation::Increment,
+                    FixedPointDecimal {
+                        raw_val: 0xfd9au16 as i16
+                    }
+                )),
+                *commands
+                    .get(0)
+                    .expect("Length asserted to be more then one")
+            );
+            assert_eq!(
+                Command::Lens(LensCommand::Focus(
+                    Operation::Increment,
+                    FixedPointDecimal {
+                        raw_val: 0xfd9au16 as i16
+                    }
+                )),
+                *commands.get(1).expect("Length asserted to be two")
+            );
+        } else {
+            assert!(false);
+        }
+    }
 
     #[test]
     fn calculate_padding_length_no_padding() {
