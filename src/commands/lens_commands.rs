@@ -12,7 +12,6 @@ pub enum LensCommand {
 pub fn parse_lens_command(command_data: &[u8]) -> LensCommand {
     type Command = LensCommand;
     let param_val = command_data.get(0).expect("Should have param_val byte");
-    println!("parse_lens_command param_val: {:?}", param_val);
 
     match param_val {
         0x00 => {

@@ -10,7 +10,6 @@ pub struct FixedPointDecimal {
 
 impl FixedPointDecimal {
     pub fn get_real_val(self) -> f32 {
-        println!("raw_val: {}", self.raw_val);
         f32::from(self.raw_val) / 2_f32.powi(11)
     }
 
