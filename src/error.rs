@@ -4,6 +4,7 @@ use std::fmt;
 pub enum EldritchError {
     EndOfPacket,
     InvalidHeader,
+    InvalidCommandData,
     PacketToLarge,
     PaddingViolation(String),
 }
@@ -14,6 +15,7 @@ impl fmt::Display for EldritchError {
             EldritchError::EndOfPacket => write!(f, "Attempting to retrieve more data at the end of packet"),
             EldritchError::PacketToLarge => write!(f, "Blanking packet is larger then 255 bytes"),
             EldritchError::InvalidHeader => write!(f, "Command Header is invlid"),
+            EldritchError::InvalidCommandData => write!(f, "Command Data is invalid"),
             EldritchError::PaddingViolation(msg) => write!(f, "{}", msg),
         }
     }
