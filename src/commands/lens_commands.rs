@@ -40,7 +40,7 @@ mod lens_commands {
 
     #[test]
     fn parse_focus_command() {
-        let command_packet_data: [u8; 5] = [0x00, 0x80, 0x01, 0x9a, 0xfd];
+        let command_packet_data: [u8; 6] = [0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd];
         let command = parse_lens_command(&command_packet_data);
         assert_eq!(
             command,
@@ -55,7 +55,7 @@ mod lens_commands {
 
     #[test]
     fn parse_auto_focus_command() {
-        let command_packet_data = [0x01, 0x00, 0x00];
+        let command_packet_data = [0x00, 0x01, 0x00, 0x00];
         let command = parse_lens_command(&command_packet_data);
         assert_eq!(command, LensCommand::InstantaneousAutoFocus);
     }

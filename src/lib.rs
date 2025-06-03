@@ -111,7 +111,7 @@ pub fn parse_packet(data: Vec<u8>) -> Result<Vec<Command>, EldritchError> {
         let header = packet.parse_header()?;
 
         let command_data = packet.get_slice(header.command_length)?;
-        commands.push(commands::parse_command(header.command_id, command_data));
+        commands.push(commands::parse_command(command_data)?);
 
         let padding = packet.get_slice(calculate_padding_length(header.command_length))?;
         verify_padding(padding, header.command_length)?;
@@ -320,9 +320,9 @@ mod lib_test {
     #[test]
     fn parse_packet_single_command() {
         let packet_data = vec![
-            0x00, 0x05, 0x00, 0x00, // Header
-            0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
-            0x00, 0x00, 0x00, // Padding
+            0x00, 0x06, 0x00, 0x00, // Header
+            0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, // Padding
         ];
 
         if let Ok(commands) = parse_packet(packet_data) {
@@ -345,12 +345,12 @@ mod lib_test {
     #[test]
     fn parse_packet_two_commands() {
         let packet_data = vec![
-            0x00, 0x05, 0x00, 0x00, // Header
-            0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
-            0x00, 0x00, 0x00, // Padding
-            0x00, 0x05, 0x00, 0x00, // Header
-            0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
-            0x00, 0x00, 0x00, // Padding
+            0x00, 0x06, 0x00, 0x00, // Header
+            0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, // Padding
+            0x00, 0x06, 0x00, 0x00, // Header
+            0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, // Padding
         ];
 
         if let Ok(commands) = parse_packet(packet_data) {
