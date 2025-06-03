@@ -40,4 +40,17 @@ mod test {
             )))
         )
     }
+
+    #[test]
+    fn parse_lens_ois_command() {
+        let cmd_data = [0x00, 0x06, 0x00, 0x00, 0x001];
+        let cmd = parse_command(&cmd_data);
+        assert_eq!(
+            cmd,
+            Ok(Command::Lens(LensCommand::OpticalImageStabalization(
+                Operation::Assign,
+                true
+            )))
+        );
+    }
 }
