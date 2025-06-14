@@ -16,7 +16,7 @@ pub enum LensCommand {
 pub fn parse_lens_command(command_data: CommandData) -> Result<LensCommand, EldritchError> {
     type Command = LensCommand;
 
-    match command_data.parameter {
+    match command_data.parameter() {
         0x00 => parse_focus_command(command_data),
         0x01 => Ok(Command::InstantaneousAutoFocus),
         0x02 => parse_apature_fstop_command(command_data),
@@ -28,10 +28,10 @@ pub fn parse_lens_command(command_data: CommandData) -> Result<LensCommand, Eldr
 }
 
 fn parse_focus_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
-    if let Ok(data) = cmd_data.data_buff.try_into() {
+    if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
         Ok(LensCommand::Focus(
-            if *cmd_data.operation == 0 {
+            if *cmd_data.operation()== 0 {
                 Operation::Assign
             } else {
                 Operation::Increment
@@ -44,9 +44,9 @@ fn parse_focus_command(cmd_data: CommandData) -> Result<LensCommand, EldritchErr
 }
 
 fn parse_apature_fstop_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
-    if let Ok(data) = cmd_data.data_buff.try_into() {
+    if let Ok(data) = cmd_data.data_buff().try_into() {
         Ok(LensCommand::ApatureFStop(
-            if *cmd_data.operation == 0 {
+            if *cmd_data.operation() == 0 {
                 Operation::Assign
             } else {
                 Operation::Increment
@@ -59,9 +59,9 @@ fn parse_apature_fstop_command(cmd_data: CommandData) -> Result<LensCommand, Eld
 }
 
 fn parse_apature_normalized_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
-    if let Ok(data) = cmd_data.data_buff.try_into() {
+    if let Ok(data) = cmd_data.data_buff().try_into() {
         Ok(LensCommand::ApatureNormalized(
-            if *cmd_data.operation == 0 {
+            if *cmd_data.operation()== 0 {
                 Operation::Assign
             } else {
                 Operation::Increment
@@ -74,10 +74,10 @@ fn parse_apature_normalized_command(cmd_data: CommandData) -> Result<LensCommand
 }
 
 fn parse_apature_ordinal(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
-    if *cmd_data.data_type == 1 {
-        if let Ok(data) = (*cmd_data.data_buff).try_into() {
+    if *cmd_data.data_type() == 1 {
+        if let Ok(data) = (*cmd_data.data_buff()).try_into() {
             Ok(LensCommand::ApatureOrdinal(
-                    if *cmd_data.operation == 0 {
+                    if *cmd_data.operation() == 0 {
                         Operation::Assign
                     } else {
                         Operation::Increment
@@ -93,24 +93,23 @@ fn parse_apature_ordinal(cmd_data: CommandData) -> Result<LensCommand, EldritchE
 
 fn parse_ois_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
     Ok(LensCommand::OpticalImageStabalization(
-        if *cmd_data.operation == 0 {
+        if *cmd_data.operation() == 0 {
             Operation::Assign
         } else {
             return Err(EldritchError::InvalidCommandData);
         },
-        cmd_data.data_buff[0] != 0,
+        cmd_data.data_buff()[0] != 0,
     ))
 }
 
 #[cfg(test)]
 mod lens_commands {
     use super::*;
-    use crate::commands::parse_command_data;
 
     #[test]
     fn parse_command_data_assign() {
         let command_data = [0x00, 0x00, 0x80, 0x00, 0x9a, 0xfd];
-        let command_data = parse_command_data(&command_data).expect("Known good packet data");
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
@@ -127,7 +126,7 @@ mod lens_commands {
     fn parse_focus_command_increment() {
         let command_packet_data: [u8; 6] = [0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd];
         let command_data =
-            parse_command_data(&command_packet_data).expect("Known good packet data");
+            CommandData::new(&command_packet_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
@@ -144,7 +143,7 @@ mod lens_commands {
     fn parse_auto_focus_command() {
         let command_packet_data = [0x00, 0x01, 0x00, 0x00];
         let command_data =
-            parse_command_data(&command_packet_data).expect("Known good packet data");
+            CommandData::new(&command_packet_data).expect("Known good packet data");
         let command = parse_lens_command(command_data);
         assert_eq!(command, Ok(LensCommand::InstantaneousAutoFocus));
     }
@@ -152,7 +151,7 @@ mod lens_commands {
     #[test]
     fn parse_apature_fstop_command() {
         let command_data = [0x00, 0x02, 0x80, 0x00, 0x9a, 0xfd];
-        let command_data = parse_command_data(&command_data).expect("Known good packet data");
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
@@ -168,7 +167,7 @@ mod lens_commands {
     #[test]
     fn parse_apature_normalized_assign() {
         let command_data = [0x00, 0x03, 0x80, 0x00, 0x9a, 0xfd];
-        let command_data = parse_command_data(&command_data).expect("Known good packet data");
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
@@ -184,7 +183,7 @@ mod lens_commands {
     #[test]
     fn parse_apature_ordinal_assign() {
         let command_data = [0x00, 0x04, 0x01, 0x00, 0x10, 0x27];
-        let command_data = parse_command_data(&command_data).expect("Known good packet data");
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
@@ -198,7 +197,7 @@ mod lens_commands {
     #[test]
     fn parse_ois_command_on() {
         let command_data = [0x00, 0x06, 0x00, 0x00, 0x01];
-        let command_data = parse_command_data(&command_data).expect("Known good packet data");
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
@@ -212,7 +211,7 @@ mod lens_commands {
     #[test]
     fn parse_ois_command_off() {
         let command_data = [0x00, 0x06, 0x00, 0x00, 0x00];
-        let command_data = parse_command_data(&command_data).expect("Known good packet data");
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,

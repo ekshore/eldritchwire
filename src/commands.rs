@@ -11,16 +11,52 @@ pub enum Command {
 
 #[derive(Debug, PartialEq)]
 pub struct CommandData<'a> {
-    category: &'a u8,
-    parameter: &'a u8,
-    data_type: &'a u8,
-    operation: &'a u8,
-    data_buff: &'a [u8],
+    bytes: &'a [u8],
+    // category: &'a u8,
+    // parameter: &'a u8,
+    // data_type: &'a u8,
+    // operation: &'a u8,
+    // data_buff: &'a [u8],
+}
+
+impl<'a> CommandData<'a> {
+    pub fn new(bytes: &'a [u8]) -> Result<Self, EldritchError> {
+        if bytes.len() < 3 {
+            return Err(EldritchError::InvalidCommandData);
+        }
+        Ok(Self { bytes })
+    }
+}
+
+impl CommandData<'_> {
+    pub fn category(&self) -> &u8 {
+        &self.bytes[0]
+    }
+
+    #[inline(always)]
+    pub fn parameter(&self) -> &u8 {
+        &self.bytes[1]
+    }
+
+    #[inline(always)]
+    pub fn data_type(&self) -> &u8 {
+        &self.bytes[2]
+    }
+
+    #[inline(always)]
+    pub fn operation(&self) -> &u8 {
+        &self.bytes[3]
+    }
+
+    #[inline(always)]
+    pub fn data_buff(&self) -> &[u8] {
+        &self.bytes[4..]
+    }
 }
 
 pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
-    if let Ok(cmd_data) = parse_command_data(cmd_buffer) {
-        let command = match cmd_data.category {
+    if let Ok(cmd_data) = CommandData::new(cmd_buffer) {
+        let command = match cmd_data.category() {
             0x00 => Command::Lens(lens_commands::parse_lens_command(cmd_data)?),
             _ => todo!("Command category has either not been implemented or is invalid"),
         };
@@ -28,20 +64,6 @@ pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
     } else {
         Err(EldritchError::InvalidCommandData)
     }
-}
-
-fn parse_command_data(cmd_buff: &[u8]) -> Result<CommandData, EldritchError> {
-    if cmd_buff.len() < 3 {
-        return Err(EldritchError::InvalidCommandData);
-    }
-
-    Ok(CommandData {
-        category: &cmd_buff[0],
-        parameter: &cmd_buff[1],
-        data_type: &cmd_buff[2],
-        operation: &cmd_buff[3],
-        data_buff: &cmd_buff[4..],
-    })
 }
 
 #[cfg(test)]
@@ -80,32 +102,31 @@ mod test {
     #[test]
     fn parse_command_data_success() {
         let cmd_data = [0x00, 0x06, 0x00, 0x00, 0x001];
-        let cmd_data = super::parse_command_data(&cmd_data);
-        assert_eq!(
-            cmd_data,
-            Ok(CommandData {
-                category: &0x00,
-                parameter: &0x06,
-                data_type: &0x00,
-                operation: &0x00,
-                data_buff: &[0x01],
-            })
-        );
+        if let Ok(cmd_data) = CommandData::new(&cmd_data) {
+            assert_eq!(
+                cmd_data,
+                CommandData {
+                    bytes: &[0x00, 0x06, 0x00, 0x00, 0x001]
+                }
+            );
+            assert_eq!(&0x00, cmd_data.category());
+        } else {
+            assert!(false)
+        }
     }
 
     #[test]
     fn parse_command_data_success_longer_data() {
-        let command_data: [u8; 6] = [0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd];
-        let command_data = super::parse_command_data(&command_data);
+        let cmd_data: [u8; 6] = [0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd];
+        if let Ok(cmd_data) = CommandData::new(&cmd_data) {
         assert_eq!(
-            command_data,
-            Ok(CommandData {
-                category: &0x00,
-                parameter: &0x00,
-                data_type: &0x80,
-                operation: &0x01,
-                data_buff: &[0x9a, 0xfd],
-            })
+            cmd_data,
+            CommandData {
+                bytes: &[0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd],
+            }
         );
+        } else {
+            assert!(false)
+        }
     }
 }
