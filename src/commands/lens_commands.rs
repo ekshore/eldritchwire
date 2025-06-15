@@ -30,8 +30,11 @@ pub fn parse_lens_command(command_data: CommandData) -> Result<LensCommand, Eldr
 fn parse_focus_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
+        if data < 0.0 || data > 1.0 {
+            return Err(EldritchError::DataOutOfBounds);
+        }
         Ok(LensCommand::Focus(
-            if *cmd_data.operation()== 0 {
+            if *cmd_data.operation() == 0 {
                 Operation::Assign
             } else {
                 Operation::Increment
@@ -61,7 +64,7 @@ fn parse_apature_fstop_command(cmd_data: CommandData) -> Result<LensCommand, Eld
 fn parse_apature_normalized_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         Ok(LensCommand::ApatureNormalized(
-            if *cmd_data.operation()== 0 {
+            if *cmd_data.operation() == 0 {
                 Operation::Assign
             } else {
                 Operation::Increment
@@ -77,12 +80,13 @@ fn parse_apature_ordinal(cmd_data: CommandData) -> Result<LensCommand, EldritchE
     if *cmd_data.data_type() == 1 {
         if let Ok(data) = (*cmd_data.data_buff()).try_into() {
             Ok(LensCommand::ApatureOrdinal(
-                    if *cmd_data.operation() == 0 {
-                        Operation::Assign
-                    } else {
-                        Operation::Increment
-                    },
-                    i16::from_le_bytes(data)))
+                if *cmd_data.operation() == 0 {
+                    Operation::Assign
+                } else {
+                    Operation::Increment
+                },
+                i16::from_le_bytes(data),
+            ))
         } else {
             Err(EldritchError::InvalidCommandData)
         }
@@ -108,7 +112,7 @@ mod lens_commands {
 
     #[test]
     fn parse_command_data_assign() {
-        let command_data = [0x00, 0x00, 0x80, 0x00, 0x9a, 0xfd];
+        let command_data = [0x00, 0x00, 0x80, 0x00, 0x33, 0x01];
         let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(
@@ -116,7 +120,7 @@ mod lens_commands {
             Ok(LensCommand::Focus(
                 Operation::Assign,
                 FixedPointDecimal {
-                    raw_val: 0xfd9au16 as i16,
+                    raw_val: 0x0133u16 as i16,
                 }
             ))
         );
@@ -124,26 +128,40 @@ mod lens_commands {
 
     #[test]
     fn parse_focus_command_increment() {
-        let command_packet_data: [u8; 6] = [0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd];
-        let command_data =
-            CommandData::new(&command_packet_data).expect("Known good packet data");
+        let command_packet_data: [u8; 6] = [0x00, 0x00, 0x80, 0x01, 0x33, 0x01];
+        let command_data = CommandData::new(&command_packet_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
             Ok(LensCommand::Focus(
                 Operation::Increment,
                 FixedPointDecimal {
-                    raw_val: 0xfd9au16 as i16
+                    raw_val: 0x0133u16 as i16
                 }
             ))
         );
     }
 
     #[test]
+    fn parse_focus_command_below_bounds() {
+        let command_data = [0x00, 0x00, 0x80, 0x00, 0x01, 0x80];
+        let command_data = CommandData::new(&command_data).expect("Data has correct length");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+    }
+
+    #[test]
+    fn parse_focus_command_above_bounds() {
+        let command_data = [0x00, 0x00, 0x80, 0x00, 0xcc, 0x08];
+        let command_data = CommandData::new(&command_data).expect("Data has correct length");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+    }
+
+    #[test]
     fn parse_auto_focus_command() {
         let command_packet_data = [0x00, 0x01, 0x00, 0x00];
-        let command_data =
-            CommandData::new(&command_packet_data).expect("Known good packet data");
+        let command_data = CommandData::new(&command_packet_data).expect("Known good packet data");
         let command = parse_lens_command(command_data);
         assert_eq!(command, Ok(LensCommand::InstantaneousAutoFocus));
     }
@@ -187,10 +205,7 @@ mod lens_commands {
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::ApatureOrdinal(
-                Operation::Assign,
-                10_000_i16
-            ))
+            Ok(LensCommand::ApatureOrdinal(Operation::Assign, 10_000_i16))
         );
     }
 

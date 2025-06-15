@@ -340,7 +340,7 @@ mod lib_test {
     fn parse_packet_single_command() {
         let packet_data = vec![
             0x00, 0x06, 0x00, 0x00, // Header
-            0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, 0x80, 0x01, 0x33, 0x01, // Command
             0x00, 0x00, // Padding
         ];
 
@@ -351,7 +351,7 @@ mod lib_test {
                 Command::Lens(LensCommand::Focus(
                     Operation::Increment,
                     FixedPointDecimal {
-                        raw_val: 0xfd9au16 as i16
+                        raw_val: 0x0133u16 as i16
                     }
                 )),
                 *commands.get(0).expect("Length asserted to be one")
@@ -365,10 +365,10 @@ mod lib_test {
     fn parse_packet_two_commands() {
         let packet_data = vec![
             0x00, 0x06, 0x00, 0x00, // Header
-            0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, 0x80, 0x01, 0x33, 0x01, // Command
             0x00, 0x00, // Padding
             0x00, 0x06, 0x00, 0x00, // Header
-            0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd, // Command
+            0x00, 0x00, 0x80, 0x01, 0x33, 0x01, // Command
             0x00, 0x00, // Padding
         ];
 
@@ -379,7 +379,7 @@ mod lib_test {
                 Command::Lens(LensCommand::Focus(
                     Operation::Increment,
                     FixedPointDecimal {
-                        raw_val: 0xfd9au16 as i16
+                        raw_val: 0x0133u16 as i16
                     }
                 )),
                 *commands
@@ -390,7 +390,7 @@ mod lib_test {
                 Command::Lens(LensCommand::Focus(
                     Operation::Increment,
                     FixedPointDecimal {
-                        raw_val: 0xfd9au16 as i16
+                        raw_val: 0x0133u16 as i16
                     }
                 )),
                 *commands.get(1).expect("Length asserted to be two")

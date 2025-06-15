@@ -73,17 +73,17 @@ mod test {
 
     #[test]
     fn parse_lens_focus_command() {
-        let command_data: [u8; 6] = [0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd];
+        let command_data: [u8; 6] = [0x00, 0x00, 0x80, 0x01, 0x33, 0x01];
         let command = parse_command(&command_data);
         assert_eq!(
             command,
             Ok(Command::Lens(LensCommand::Focus(
                 Operation::Increment,
                 FixedPointDecimal {
-                    raw_val: 0xFD9Au16 as i16
+                    raw_val: 0x0133u16 as i16
                 }
             )))
-        )
+        );
     }
 
     #[test]
