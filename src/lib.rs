@@ -2,8 +2,9 @@ mod commands;
 mod error;
 use commands::Command;
 use error::EldritchError;
+use std::fmt::Debug;
 
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, PartialEq, PartialOrd)]
 pub struct FixedPointDecimal {
     raw_val: i16,
 }
@@ -22,6 +23,17 @@ impl FixedPointDecimal {
         Self {
             raw_val: u16::from_le_bytes(*data) as i16,
         }
+    }
+}
+
+impl Debug for FixedPointDecimal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "FixedPointDecimal {{ raw_val: {}, real_val: {} }}",
+            self.raw_val,
+            self.get_real_val()
+        )
     }
 }
 

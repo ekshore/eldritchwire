@@ -48,13 +48,17 @@ fn parse_focus_command(cmd_data: CommandData) -> Result<LensCommand, EldritchErr
 
 fn parse_apature_fstop_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
     if let Ok(data) = cmd_data.data_buff().try_into() {
+        let data = FixedPointDecimal::from_data(data);
+        if data < -1.0 || data > 16.0 {
+            return Err(EldritchError::DataOutOfBounds)
+        }
         Ok(LensCommand::ApatureFStop(
             if *cmd_data.operation() == 0 {
                 Operation::Assign
             } else {
                 Operation::Increment
             },
-            FixedPointDecimal::from_data(data),
+            data
         ))
     } else {
         Err(EldritchError::InvalidCommandData)
@@ -177,6 +181,32 @@ mod lens_commands {
                 Operation::Assign,
                 FixedPointDecimal {
                     raw_val: 0xfd9au16 as i16
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn parse_apature_fstop_command_below_bounds() {
+        let command_data = [0x00, 0x02, 0x80, 0x00, 0x34, 0xf7];
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+    }
+
+    #[test]
+    fn parse_apature_fstop_command_at_upper_bounds() {
+        let command_data = [0x00, 0x02, 0x80, 0x00, 0xff, 0x7f];
+        let fp = FixedPointDecimal::from_data(&[0x00, 0x80]);
+        println!("{:?}", fp);
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(
+            command,
+            Ok(LensCommand::ApatureFStop(
+                Operation::Assign,
+                FixedPointDecimal {
+                    raw_val: 0x7fffu16 as i16
                 }
             ))
         );
