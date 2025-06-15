@@ -3,17 +3,17 @@ mod error;
 use commands::Command;
 use error::EldritchError;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct FixedPointDecimal {
     raw_val: i16,
 }
 
 impl FixedPointDecimal {
-    pub fn get_real_val(self) -> f32 {
+    pub fn get_real_val(&self) -> f32 {
         f32::from(self.raw_val) / 2_f32.powi(11)
     }
 
-    pub fn get_rounded_val(self) -> f32 {
+    pub fn get_rounded_val(&self) -> f32 {
         (self.get_real_val() * 100.0).round() / 100.0
     }
 
@@ -21,6 +21,25 @@ impl FixedPointDecimal {
         assert!(data.len() == 2);
         Self {
             raw_val: u16::from_le_bytes(*data) as i16,
+        }
+    }
+}
+
+impl PartialEq<f32> for FixedPointDecimal {
+    fn eq(&self, other: &f32) -> bool {
+        &self.get_real_val() == other
+    }
+}
+
+impl PartialOrd<f32> for FixedPointDecimal {
+    fn partial_cmp(&self, other: &f32) -> Option<std::cmp::Ordering> {
+        let real_val = self.get_real_val();
+        if &real_val == other {
+            Some(std::cmp::Ordering::Equal)
+        } else if &real_val < other {
+            Some(std::cmp::Ordering::Less)
+        } else {
+            Some(std::cmp::Ordering::Greater)
         }
     }
 }
