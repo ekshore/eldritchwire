@@ -9,11 +9,14 @@ pub enum LensCommand {
     ApatureFStop(Operation, FixedPointDecimal),
     ApatureNormalized(Operation, FixedPointDecimal),
     ApatureOrdinal(Operation, i16),
+    InstantaneousAutoApature,
     OpticalImageStabalization(Operation, bool),
     NoOp,
 }
 
-pub fn parse_lens_command(command_data: CommandData) -> Result<LensCommand, EldritchError> {
+type LensResult = Result<LensCommand, EldritchError>;
+
+pub fn parse_lens_command(command_data: CommandData) -> LensResult {
     type Command = LensCommand;
 
     match command_data.parameter() {
@@ -22,12 +25,13 @@ pub fn parse_lens_command(command_data: CommandData) -> Result<LensCommand, Eldr
         0x02 => parse_apature_fstop_command(command_data),
         0x03 => parse_apature_normalized_command(command_data),
         0x04 => parse_apature_ordinal(command_data),
+        0x05 => Ok(Command::InstantaneousAutoApature),
         0x06 => parse_ois_command(command_data),
         _ => Ok(Command::NoOp),
     }
 }
 
-fn parse_focus_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
+fn parse_focus_command(cmd_data: CommandData) -> LensResult {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
         if data < 0.0 || data > 1.0 {
@@ -46,7 +50,7 @@ fn parse_focus_command(cmd_data: CommandData) -> Result<LensCommand, EldritchErr
     }
 }
 
-fn parse_apature_fstop_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
+fn parse_apature_fstop_command(cmd_data: CommandData) -> LensResult {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
         if data < -1.0 || data > 16.0 {
@@ -65,7 +69,7 @@ fn parse_apature_fstop_command(cmd_data: CommandData) -> Result<LensCommand, Eld
     }
 }
 
-fn parse_apature_normalized_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
+fn parse_apature_normalized_command(cmd_data: CommandData) -> LensResult {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
         if data < 0.0 || data > 1.0 {
@@ -84,7 +88,7 @@ fn parse_apature_normalized_command(cmd_data: CommandData) -> Result<LensCommand
     }
 }
 
-fn parse_apature_ordinal(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
+fn parse_apature_ordinal(cmd_data: CommandData) -> LensResult {
     if *cmd_data.data_type() == 1 {
         if let Ok(data) = (*cmd_data.data_buff()).try_into() {
             let data = i16::from_le_bytes(data);
@@ -275,10 +279,15 @@ mod lens_commands {
         let command_data = [0x00, 0x04, 0x01, 0x00, 0xff, 0xff];
         let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
-        assert_eq!(
-            command,
-            Err(EldritchError::DataOutOfBounds)
-        );
+        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+    }
+
+    #[test]
+    fn parse_auto_apature_command() {
+        let command_packet_data = [0x00, 0x05, 0x00, 0x00];
+        let command_data = CommandData::new(&command_packet_data).expect("Known good packet data");
+        let command = parse_lens_command(command_data);
+        assert_eq!(command, Ok(LensCommand::InstantaneousAutoApature));
     }
 
     #[test]
