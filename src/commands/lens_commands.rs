@@ -87,13 +87,17 @@ fn parse_apature_normalized_command(cmd_data: CommandData) -> Result<LensCommand
 fn parse_apature_ordinal(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
     if *cmd_data.data_type() == 1 {
         if let Ok(data) = (*cmd_data.data_buff()).try_into() {
+            let data = i16::from_le_bytes(data);
+            if data < 0 {
+                return Err(EldritchError::DataOutOfBounds);
+            }
             Ok(LensCommand::ApatureOrdinal(
                 if *cmd_data.operation() == 0 {
                     Operation::Assign
                 } else {
                     Operation::Increment
                 },
-                i16::from_le_bytes(data),
+                data,
             ))
         } else {
             Err(EldritchError::InvalidCommandData)
@@ -245,9 +249,9 @@ mod lens_commands {
         assert_eq!(command, Err(EldritchError::DataOutOfBounds));
     }
 
-    #[test] 
+    #[test]
     fn parse_apature_normalized_command_above_bounds() {
-        //Value 1.1 is above the bound of 1.0
+        // Value 1.1 is above the bound of 1.0
         let command_data = [0x00, 0x03, 0x80, 0x00, 0xcc, 0x08];
         let command_data = CommandData::new(&command_data).expect("Known good command data");
         let command = super::parse_lens_command(command_data);
@@ -262,6 +266,18 @@ mod lens_commands {
         assert_eq!(
             command,
             Ok(LensCommand::ApatureOrdinal(Operation::Assign, 10_000_i16))
+        );
+    }
+
+    #[test]
+    fn parse_apature_ordinal_command_assign_below_bounds() {
+        // Value -1 is below the bound of 0.0
+        let command_data = [0x00, 0x04, 0x01, 0x00, 0xff, 0xff];
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(
+            command,
+            Err(EldritchError::DataOutOfBounds)
         );
     }
 
