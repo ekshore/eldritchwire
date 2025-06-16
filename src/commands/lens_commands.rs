@@ -11,6 +11,7 @@ pub enum LensCommand {
     ApatureOrdinal(Operation, i16),
     InstantaneousAutoApature,
     OpticalImageStabalization(Operation, bool),
+    SetAbsoluteZoomMM(Operation, i16),
     NoOp,
 }
 
@@ -27,6 +28,7 @@ pub fn parse_lens_command(command_data: CommandData) -> LensResult {
         0x04 => parse_apature_ordinal(command_data),
         0x05 => Ok(Command::InstantaneousAutoApature),
         0x06 => parse_ois_command(command_data),
+        0x07 => parse_absolute_zoom_mm_command(command_data),
         _ => Ok(Command::NoOp),
     }
 }
@@ -89,7 +91,7 @@ fn parse_apature_normalized_command(cmd_data: CommandData) -> LensResult {
 }
 
 fn parse_apature_ordinal(cmd_data: CommandData) -> LensResult {
-    if *cmd_data.data_type() == 1 {
+    if *cmd_data.data_type() == 2 {
         if let Ok(data) = (*cmd_data.data_buff()).try_into() {
             let data = i16::from_le_bytes(data);
             if data < 0 {
@@ -111,7 +113,7 @@ fn parse_apature_ordinal(cmd_data: CommandData) -> LensResult {
     }
 }
 
-fn parse_ois_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError> {
+fn parse_ois_command(cmd_data: CommandData) -> LensResult {
     Ok(LensCommand::OpticalImageStabalization(
         if *cmd_data.operation() == 0 {
             Operation::Assign
@@ -120,6 +122,30 @@ fn parse_ois_command(cmd_data: CommandData) -> Result<LensCommand, EldritchError
         },
         cmd_data.data_buff()[0] != 0,
     ))
+}
+
+fn parse_absolute_zoom_mm_command(cmd_data: CommandData) -> LensResult {
+    if *cmd_data.data_type() == 2 {
+        if let Ok(data) = cmd_data.data_buff().try_into() {
+            let data = i16::from_le_bytes(data);
+            if data < 0 {
+                Err(EldritchError::DataOutOfBounds)
+            } else {
+                Ok(LensCommand::SetAbsoluteZoomMM(
+                    if *cmd_data.operation() == 0 {
+                        Operation::Assign
+                    } else {
+                        Operation::Increment
+                    },
+                    data,
+                ))
+            }
+        } else {
+            Err(EldritchError::InvalidCommandData)
+        }
+    } else {
+        Err(EldritchError::InvalidCommandData)
+    }
 }
 
 #[cfg(test)]
@@ -264,7 +290,7 @@ mod lens_commands {
 
     #[test]
     fn parse_apature_ordinal_assign() {
-        let command_data = [0x00, 0x04, 0x01, 0x00, 0x10, 0x27];
+        let command_data = [0x00, 0x04, 0x02, 0x00, 0x10, 0x27];
         let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(
@@ -274,9 +300,17 @@ mod lens_commands {
     }
 
     #[test]
+    fn parse_apature_ordinal_command_bad_data_type() {
+        let command_data = [0x00, 0x04, 0x01, 0x00, 0x10, 0x27];
+        let command_data = CommandData::new(&command_data).expect("Should parse");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::InvalidCommandData));
+    }
+
+    #[test]
     fn parse_apature_ordinal_command_assign_below_bounds() {
         // Value -1 is below the bound of 0.0
-        let command_data = [0x00, 0x04, 0x01, 0x00, 0xff, 0xff];
+        let command_data = [0x00, 0x04, 0x02, 0x00, 0xff, 0xff];
         let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_lens_command(command_data);
         assert_eq!(command, Err(EldritchError::DataOutOfBounds));
@@ -316,5 +350,43 @@ mod lens_commands {
                 false
             ))
         );
+    }
+
+    #[test]
+    fn parse_absolute_zoom_mm_command_assign() {
+        let command_data = [0x00, 0x07, 0x02, 0x00, 0x10, 0x00];
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(
+            command,
+            Ok(LensCommand::SetAbsoluteZoomMM(Operation::Assign, 16))
+        );
+    }
+
+    #[test]
+    fn parse_absolute_zoom_mm_command_increment() {
+        let command_data = [0x00, 0x07, 0x02, 0x01, 0x10, 0x00];
+        let command_data = CommandData::new(&command_data).expect("Should parse");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(
+            command,
+            Ok(LensCommand::SetAbsoluteZoomMM(Operation::Increment, 16))
+        );
+    }
+
+    #[test]
+    fn parse_absolute_zoom_mm_command_wrong_data_type() {
+        let command_data = [0x00, 0x07, 0x01, 0x00, 0x10, 0x00];
+        let command_data = CommandData::new(&command_data).expect("Should parse");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::InvalidCommandData));
+    }
+
+    #[test]
+    fn parse_absolute_zoom_mm_command_value_below_bounds() {
+        let command_data = [0x00, 0x07, 0x02, 0x00, 0xfe, 0xff];
+        let command_data = CommandData::new(&command_data).expect("Should parse");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
     }
 }
