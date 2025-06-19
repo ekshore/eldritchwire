@@ -12,6 +12,7 @@ pub enum LensCommand {
     InstantaneousAutoApature,
     OpticalImageStabalization(Operation, bool),
     SetAbsoluteZoomMM(Operation, i16),
+    SetAbsoluteZoomNormalized(Operation, FixedPointDecimal),
     NoOp,
 }
 
@@ -29,6 +30,7 @@ pub fn parse_lens_command(command_data: CommandData) -> LensResult {
         0x05 => Ok(Command::InstantaneousAutoApature),
         0x06 => parse_ois_command(command_data),
         0x07 => parse_absolute_zoom_mm_command(command_data),
+        0x08 => parse_absolute_zoom_normalized_command(command_data),
         _ => Ok(Command::NoOp),
     }
 }
@@ -140,6 +142,29 @@ fn parse_absolute_zoom_mm_command(cmd_data: CommandData) -> LensResult {
                     data,
                 ))
             }
+        } else {
+            Err(EldritchError::InvalidCommandData)
+        }
+    } else {
+        Err(EldritchError::InvalidCommandData)
+    }
+}
+
+fn parse_absolute_zoom_normalized_command(cmd_data: CommandData) -> LensResult {
+    if *cmd_data.data_type() == 128 {
+        if let Ok(data) = cmd_data.data_buff().try_into() {
+            let data = FixedPointDecimal::from_data(data);
+            if data < 0.0 || data > 1.0 {
+                return Err(EldritchError::DataOutOfBounds);
+            }
+            Ok(LensCommand::SetAbsoluteZoomNormalized(
+                if *cmd_data.operation() == 0 {
+                    Operation::Assign
+                } else {
+                    Operation::Increment
+                },
+                data,
+            ))
         } else {
             Err(EldritchError::InvalidCommandData)
         }
@@ -388,5 +413,63 @@ mod lens_commands {
         let command_data = CommandData::new(&command_data).expect("Should parse");
         let command = super::parse_lens_command(command_data);
         assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+    }
+
+    #[test]
+    fn parse_absolute_zoom_normalized_command_assign() {
+        let command_data = [0x00, 0x08, 0x80, 0x00, 0xff, 0x00];
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(
+            command,
+            Ok(LensCommand::SetAbsoluteZoomNormalized(
+                Operation::Assign,
+                FixedPointDecimal {
+                    raw_val: 0x00ffu16 as i16
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn parse_absolute_zoom_normalized_command_increment() {
+        let command_data = [0x00, 0x08, 0x80, 0x01, 0xff, 0x00];
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(
+            command,
+            Ok(LensCommand::SetAbsoluteZoomNormalized(
+                Operation::Increment,
+                FixedPointDecimal {
+                    raw_val: 0x00ffu16 as i16
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn parse_absolute_zoom_normalized_command_below_bounds() {
+        // Value -0.1 is below the bound of 0.0
+        let command_data = [0x00, 0x08, 0x80, 0x00, 0xff, 0xff];
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+    }
+
+    #[test]
+    fn parse_absolute_zoom_normalized_command_above_bounds() {
+        // Value 1.1 is above the bound of 1.0
+        let command_data = [0x00, 0x08, 0x80, 0x00, 0xcc, 0x08];
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+    }
+
+    #[test]
+    fn parse_absolute_zoom_normalized_command_wrong_data_type() {
+        let command_data = [0x00, 0x08, 0x01, 0x00, 0xcc, 0x08];
+        let command_data = CommandData::new(&command_data).expect("Known good packet");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::InvalidCommandData));
     }
 }
