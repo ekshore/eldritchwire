@@ -11,8 +11,8 @@ pub enum LensCommand {
     ApatureOrdinal(Operation, i16),
     InstantaneousAutoApature,
     OpticalImageStabalization(Operation, bool),
-    SetAbsoluteZoomMM(Operation, i16),
-    SetAbsoluteZoomNormalized(Operation, FixedPointDecimal),
+    AbsoluteZoomMM(Operation, i16),
+    AbsoluteZoomNormalized(Operation, FixedPointDecimal),
     NoOp,
 }
 
@@ -133,7 +133,7 @@ fn parse_absolute_zoom_mm_command(cmd_data: CommandData) -> LensResult {
             if data < 0 {
                 Err(EldritchError::DataOutOfBounds)
             } else {
-                Ok(LensCommand::SetAbsoluteZoomMM(
+                Ok(LensCommand::AbsoluteZoomMM(
                     if *cmd_data.operation() == 0 {
                         Operation::Assign
                     } else {
@@ -157,7 +157,7 @@ fn parse_absolute_zoom_normalized_command(cmd_data: CommandData) -> LensResult {
             if data < 0.0 || data > 1.0 {
                 return Err(EldritchError::DataOutOfBounds);
             }
-            Ok(LensCommand::SetAbsoluteZoomNormalized(
+            Ok(LensCommand::AbsoluteZoomNormalized(
                 if *cmd_data.operation() == 0 {
                     Operation::Assign
                 } else {
@@ -384,7 +384,7 @@ mod lens_commands {
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::SetAbsoluteZoomMM(Operation::Assign, 16))
+            Ok(LensCommand::AbsoluteZoomMM(Operation::Assign, 16))
         );
     }
 
@@ -395,7 +395,7 @@ mod lens_commands {
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::SetAbsoluteZoomMM(Operation::Increment, 16))
+            Ok(LensCommand::AbsoluteZoomMM(Operation::Increment, 16))
         );
     }
 
@@ -422,7 +422,7 @@ mod lens_commands {
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::SetAbsoluteZoomNormalized(
+            Ok(LensCommand::AbsoluteZoomNormalized(
                 Operation::Assign,
                 FixedPointDecimal {
                     raw_val: 0x00ffu16 as i16
@@ -438,7 +438,7 @@ mod lens_commands {
         let command = super::parse_lens_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::SetAbsoluteZoomNormalized(
+            Ok(LensCommand::AbsoluteZoomNormalized(
                 Operation::Increment,
                 FixedPointDecimal {
                     raw_val: 0x00ffu16 as i16
