@@ -13,6 +13,7 @@ pub enum LensCommand {
     OpticalImageStabalization(Operation, bool),
     AbsoluteZoomMM(Operation, i16),
     AbsoluteZoomNormalized(Operation, FixedPointDecimal),
+    AbsoluteZoomContinuous(FixedPointDecimal),
     NoOp,
 }
 
@@ -31,6 +32,7 @@ pub fn parse_lens_command(command_data: CommandData) -> LensResult {
         0x06 => parse_ois_command(command_data),
         0x07 => parse_absolute_zoom_mm_command(command_data),
         0x08 => parse_absolute_zoom_normalized_command(command_data),
+        0x09 => parse_absolute_zoom_continuous_command(command_data),
         _ => Ok(Command::NoOp),
     }
 }
@@ -165,6 +167,23 @@ fn parse_absolute_zoom_normalized_command(cmd_data: CommandData) -> LensResult {
                 },
                 data,
             ))
+        } else {
+            Err(EldritchError::InvalidCommandData)
+        }
+    } else {
+        Err(EldritchError::InvalidCommandData)
+    }
+}
+
+fn parse_absolute_zoom_continuous_command(cmd_data: CommandData) -> LensResult {
+    if *cmd_data.data_type() == 128 {
+        if let Ok(data) = cmd_data.data_buff().try_into() {
+            let data = FixedPointDecimal::from_data(data);
+            if data < -1.0 || data > 1.0 {
+                Err(EldritchError::DataOutOfBounds)
+            } else {
+                Ok(LensCommand::AbsoluteZoomContinuous(data))
+            }
         } else {
             Err(EldritchError::InvalidCommandData)
         }
@@ -468,6 +487,45 @@ mod lens_commands {
     #[test]
     fn parse_absolute_zoom_normalized_command_wrong_data_type() {
         let command_data = [0x00, 0x08, 0x01, 0x00, 0xcc, 0x08];
+        let command_data = CommandData::new(&command_data).expect("Known good packet");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::InvalidCommandData));
+    }
+
+    #[test]
+    fn parse_absolute_zoom_continuous_command() {
+        let command_data = [0x00, 0x09, 0x80, 0x01, 0xff, 0x00];
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(
+            command,
+            Ok(LensCommand::AbsoluteZoomContinuous(FixedPointDecimal {
+                raw_val: 0x00ffu16 as i16
+            }))
+        );
+    }
+
+    #[test]
+    fn parse_absolute_zoom_continuous_command_below_bounds() {
+        // Value -1.1 is below the bound of -1.0
+        let command_data = [0x00, 0x09, 0x80, 0x00, 0x34, 0xf7];
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+    }
+
+    #[test]
+    fn parse_absolute_zoom_continuous_command_above_bounds() {
+        // Value 1.1 is above the bound of 1.0
+        let command_data = [0x00, 0x09, 0x80, 0x00, 0xcc, 0x08];
+        let command_data = CommandData::new(&command_data).expect("Known good packet data");
+        let command = super::parse_lens_command(command_data);
+        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+    }
+
+    #[test]
+    fn parse_absolute_zoom_continuous_command_wrong_data_type() {
+        let command_data = [0x00, 0x09, 0x01, 0x00, 0xcc, 0x08];
         let command_data = CommandData::new(&command_data).expect("Known good packet");
         let command = super::parse_lens_command(command_data);
         assert_eq!(command, Err(EldritchError::InvalidCommandData));
