@@ -40,7 +40,7 @@ pub fn parse_lens_command(command_data: CommandData) -> LensResult {
 fn parse_focus_command(cmd_data: CommandData) -> LensResult {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
-        if data < 0.0 || data > 1.0 {
+        if !(0.0..=1.0).contains(&data.get_real_val()) {
             return Err(EldritchError::DataOutOfBounds);
         }
         Ok(LensCommand::Focus(
@@ -59,7 +59,7 @@ fn parse_focus_command(cmd_data: CommandData) -> LensResult {
 fn parse_apature_fstop_command(cmd_data: CommandData) -> LensResult {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
-        if data < -1.0 || data > 16.0 {
+        if !(-1.0..=16.0).contains(&data.get_real_val()) {
             return Err(EldritchError::DataOutOfBounds);
         }
         Ok(LensCommand::ApatureFStop(
@@ -78,7 +78,7 @@ fn parse_apature_fstop_command(cmd_data: CommandData) -> LensResult {
 fn parse_apature_normalized_command(cmd_data: CommandData) -> LensResult {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
-        if data < 0.0 || data > 1.0 {
+        if !(0.0..=1.0).contains(&data.get_real_val()) {
             return Err(EldritchError::DataOutOfBounds);
         }
         Ok(LensCommand::ApatureNormalized(
@@ -156,7 +156,7 @@ fn parse_absolute_zoom_normalized_command(cmd_data: CommandData) -> LensResult {
     if *cmd_data.data_type() == 128 {
         if let Ok(data) = cmd_data.data_buff().try_into() {
             let data = FixedPointDecimal::from_data(data);
-            if data < 0.0 || data > 1.0 {
+            if !(0.0..=1.0).contains(&data.get_real_val()) {
                 return Err(EldritchError::DataOutOfBounds);
             }
             Ok(LensCommand::AbsoluteZoomNormalized(
@@ -179,7 +179,7 @@ fn parse_absolute_zoom_continuous_command(cmd_data: CommandData) -> LensResult {
     if *cmd_data.data_type() == 128 {
         if let Ok(data) = cmd_data.data_buff().try_into() {
             let data = FixedPointDecimal::from_data(data);
-            if data < -1.0 || data > 1.0 {
+            if !(-1.0..=1.0).contains(&data.get_real_val()) {
                 Err(EldritchError::DataOutOfBounds)
             } else {
                 Ok(LensCommand::AbsoluteZoomContinuous(data))
@@ -193,7 +193,7 @@ fn parse_absolute_zoom_continuous_command(cmd_data: CommandData) -> LensResult {
 }
 
 #[cfg(test)]
-mod lens_commands {
+mod lens_commands_tests {
     use super::*;
 
     #[test]

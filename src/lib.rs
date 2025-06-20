@@ -115,7 +115,7 @@ impl PacketData {
         } else {
             Err(EldritchError::InvalidHeader)
         };
-        self.cursor = self.cursor + 4;
+        self.cursor += 4;
         header
     }
 
@@ -181,7 +181,7 @@ fn verify_padding(padding: &[u8], command_length: u8) -> Result<(), EldritchErro
         .filter(|check| check.is_err())
         .collect();
 
-    if padding_errors.len() > 0 {
+    if !padding_errors.is_empty() {
         padding_errors.remove(0)
     } else {
         Ok(())
@@ -222,11 +222,10 @@ mod packet_data_test {
         ];
 
         if let Ok(packet) = PacketData::new(packet_data) {
-            assert!(true);
             assert_eq!(packet.cursor, 0);
             assert_eq!(packet.data.len(), 12);
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -251,7 +250,7 @@ mod packet_data_test {
                 }
             );
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -269,7 +268,7 @@ mod packet_data_test {
             assert_eq!(error, EldritchError::InvalidHeader);
             assert_eq!(4, packet.cursor);
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -315,13 +314,13 @@ mod packet_data_test {
             assert_eq!([0x00, 0x80, 0x01, 0x9a, 0xfd,] as [u8; 5], cmd_data);
             assert_eq!(9, packet.cursor);
         } else {
-            assert!(false);
+            panic!();
         }
         if let Ok(padding) = packet.get_slice(calculate_padding_length(5)) {
             assert_eq!([0x00, 0x00, 0x00] as [u8; 3], padding);
             assert_eq!(12, packet.cursor);
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -338,7 +337,7 @@ mod packet_data_test {
         if let Err(error) = packet.get_slice(5) {
             assert_eq!(EldritchError::EndOfPacket, error);
         } else {
-            assert!(false);
+            panic!();
         }
     }
 }
@@ -366,10 +365,10 @@ mod lib_test {
                         raw_val: 0x0133u16 as i16
                     }
                 )),
-                *commands.get(0).expect("Length asserted to be one")
+                *commands.first().expect("Length asserted to be one")
             );
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -395,7 +394,7 @@ mod lib_test {
                     }
                 )),
                 *commands
-                    .get(0)
+                    .first()
                     .expect("Length asserted to be more then one")
             );
             assert_eq!(
@@ -408,32 +407,32 @@ mod lib_test {
                 *commands.get(1).expect("Length asserted to be two")
             );
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
     #[test]
     fn calculate_padding_length_no_padding() {
-        assert_eq!(0 as u8, calculate_padding_length(8));
-        assert_eq!(0 as u8, calculate_padding_length(4));
+        assert_eq!(0_u8, calculate_padding_length(8));
+        assert_eq!(0_u8, calculate_padding_length(4));
     }
 
     #[test]
     fn calculate_padding_length_one() {
-        assert_eq!(1 as u8, calculate_padding_length(3));
-        assert_eq!(1 as u8, calculate_padding_length(7));
+        assert_eq!(1_u8, calculate_padding_length(3));
+        assert_eq!(1_u8, calculate_padding_length(7));
     }
 
     #[test]
     fn calculate_padding_length_two() {
-        assert_eq!(2 as u8, calculate_padding_length(2));
-        assert_eq!(2 as u8, calculate_padding_length(6));
+        assert_eq!(2_u8, calculate_padding_length(2));
+        assert_eq!(2_u8, calculate_padding_length(6));
     }
 
     #[test]
     fn calculate_padding_length_three() {
-        assert_eq!(3 as u8, calculate_padding_length(1));
-        assert_eq!(3 as u8, calculate_padding_length(5));
+        assert_eq!(3_u8, calculate_padding_length(1));
+        assert_eq!(3_u8, calculate_padding_length(5));
     }
 
     #[test]

@@ -111,7 +111,7 @@ mod test {
             );
             assert_eq!(&0x00, cmd_data.category());
         } else {
-            assert!(false)
+            panic!();
         }
     }
 
@@ -126,7 +126,7 @@ mod test {
             }
         );
         } else {
-            assert!(false)
+            panic!();
         }
     }
 }
