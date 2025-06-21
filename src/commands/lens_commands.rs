@@ -14,7 +14,6 @@ pub enum LensCommand {
     AbsoluteZoomMM(Operation, i16),
     AbsoluteZoomNormalized(Operation, FixedPointDecimal),
     AbsoluteZoomContinuous(FixedPointDecimal),
-    NoOp,
 }
 
 type LensResult = Result<LensCommand, EldritchError>;
@@ -33,7 +32,7 @@ pub fn parse_lens_command(command_data: CommandData) -> LensResult {
         0x07 => parse_absolute_zoom_mm_command(command_data),
         0x08 => parse_absolute_zoom_normalized_command(command_data),
         0x09 => parse_absolute_zoom_continuous_command(command_data),
-        _ => Ok(Command::NoOp),
+        _ => Err(EldritchError::InvalidCommandData),
     }
 }
 
@@ -41,16 +40,17 @@ fn parse_focus_command(cmd_data: CommandData) -> LensResult {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
         if !(0.0..=1.0).contains(&data.get_real_val()) {
-            return Err(EldritchError::DataOutOfBounds);
+            Err(EldritchError::DataOutOfBounds)
+        } else {
+            Ok(LensCommand::Focus(
+                if *cmd_data.operation() == 0 {
+                    Operation::Assign
+                } else {
+                    Operation::Increment
+                },
+                data,
+            ))
         }
-        Ok(LensCommand::Focus(
-            if *cmd_data.operation() == 0 {
-                Operation::Assign
-            } else {
-                Operation::Increment
-            },
-            data,
-        ))
     } else {
         Err(EldritchError::InvalidCommandData)
     }
@@ -60,16 +60,17 @@ fn parse_apature_fstop_command(cmd_data: CommandData) -> LensResult {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
         if !(-1.0..=16.0).contains(&data.get_real_val()) {
-            return Err(EldritchError::DataOutOfBounds);
+            Err(EldritchError::DataOutOfBounds)
+        } else {
+            Ok(LensCommand::ApatureFStop(
+                if *cmd_data.operation() == 0 {
+                    Operation::Assign
+                } else {
+                    Operation::Increment
+                },
+                data,
+            ))
         }
-        Ok(LensCommand::ApatureFStop(
-            if *cmd_data.operation() == 0 {
-                Operation::Assign
-            } else {
-                Operation::Increment
-            },
-            data,
-        ))
     } else {
         Err(EldritchError::InvalidCommandData)
     }
@@ -79,16 +80,17 @@ fn parse_apature_normalized_command(cmd_data: CommandData) -> LensResult {
     if let Ok(data) = cmd_data.data_buff().try_into() {
         let data = FixedPointDecimal::from_data(data);
         if !(0.0..=1.0).contains(&data.get_real_val()) {
-            return Err(EldritchError::DataOutOfBounds);
+            Err(EldritchError::DataOutOfBounds)
+        } else {
+            Ok(LensCommand::ApatureNormalized(
+                if *cmd_data.operation() == 0 {
+                    Operation::Assign
+                } else {
+                    Operation::Increment
+                },
+                data,
+            ))
         }
-        Ok(LensCommand::ApatureNormalized(
-            if *cmd_data.operation() == 0 {
-                Operation::Assign
-            } else {
-                Operation::Increment
-            },
-            data,
-        ))
     } else {
         Err(EldritchError::InvalidCommandData)
     }
@@ -99,16 +101,17 @@ fn parse_apature_ordinal(cmd_data: CommandData) -> LensResult {
         if let Ok(data) = (*cmd_data.data_buff()).try_into() {
             let data = i16::from_le_bytes(data);
             if data < 0 {
-                return Err(EldritchError::DataOutOfBounds);
+                Err(EldritchError::DataOutOfBounds)
+            } else {
+                Ok(LensCommand::ApatureOrdinal(
+                    if *cmd_data.operation() == 0 {
+                        Operation::Assign
+                    } else {
+                        Operation::Increment
+                    },
+                    data,
+                ))
             }
-            Ok(LensCommand::ApatureOrdinal(
-                if *cmd_data.operation() == 0 {
-                    Operation::Assign
-                } else {
-                    Operation::Increment
-                },
-                data,
-            ))
         } else {
             Err(EldritchError::InvalidCommandData)
         }
@@ -157,16 +160,17 @@ fn parse_absolute_zoom_normalized_command(cmd_data: CommandData) -> LensResult {
         if let Ok(data) = cmd_data.data_buff().try_into() {
             let data = FixedPointDecimal::from_data(data);
             if !(0.0..=1.0).contains(&data.get_real_val()) {
-                return Err(EldritchError::DataOutOfBounds);
+                Err(EldritchError::DataOutOfBounds)
+            } else {
+                Ok(LensCommand::AbsoluteZoomNormalized(
+                    if *cmd_data.operation() == 0 {
+                        Operation::Assign
+                    } else {
+                        Operation::Increment
+                    },
+                    data,
+                ))
             }
-            Ok(LensCommand::AbsoluteZoomNormalized(
-                if *cmd_data.operation() == 0 {
-                    Operation::Assign
-                } else {
-                    Operation::Increment
-                },
-                data,
-            ))
         } else {
             Err(EldritchError::InvalidCommandData)
         }
