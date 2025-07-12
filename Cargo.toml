@@ -1,6 +1,14 @@
-[package]
-name = "eldritchwire"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+resolver = "2"
 
-[dependencies]
+members = [
+    "eldritchwire",
+    "eldritchwire_macros"
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Caleb Ekstrand <ekstrand.caleb@ekshore.net>"]
+
+

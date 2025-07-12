@@ -1,18 +1,46 @@
 use crate::{FixedPointDecimal, Operation, error::EldritchError};
+use eldritchwire_macros::CommandGroup;
 
 use super::CommandData;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum LensCommand {
+    #[parameter=0x00]
+    #[data_type=128]
     Focus(Operation, FixedPointDecimal),
+
+    #[parameter=0x01]
     InstantaneousAutoFocus,
+
+    #[parameter=0x02]
+    #[data_type=128]
     ApatureFStop(Operation, FixedPointDecimal),
+
+    #[parameter=0x03]
+    #[data_type=128]
     ApatureNormalized(Operation, FixedPointDecimal),
+
+    #[parameter=0x04]
+    #[data_type=2]
     ApatureOrdinal(Operation, i16),
+
+    #[parameter=0x05]
     InstantaneousAutoApature,
+
+    #[parameter=0x06]
+    #[data_type=0]
     OpticalImageStabalization(Operation, bool),
+
+    #[parameter=0x07]
+    #[data_type=2]
     AbsoluteZoomMM(Operation, i16),
+
+    #[parameter=0x08]
+    #[data_type=128]
     AbsoluteZoomNormalized(Operation, FixedPointDecimal),
+
+    #[parameter=0x09]
+    #[data_type=128]
     AbsoluteZoomContinuous(FixedPointDecimal),
 }
 
@@ -52,7 +80,10 @@ fn parse_focus_command(cmd_data: CommandData) -> LensResult {
             ))
         }
     } else {
-        Err(EldritchError::InvalidCommandData)
+        Err(EldritchError::InvalidDataType {
+            command: String::from("Focus Command"),
+            expected: String::from("FixedPointDecimal"),
+        })
     }
 }
 

@@ -1,0 +1,8 @@
+[package]
+name = "eldritchwire"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+eldritchwire_macros = { path = "../eldritchwire_macros" }

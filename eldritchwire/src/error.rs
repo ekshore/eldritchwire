@@ -4,8 +4,9 @@ use std::fmt;
 pub enum EldritchError {
     DataOutOfBounds,
     EndOfPacket,
-    InvalidHeader,
     InvalidCommandData,
+    InvalidDataType{ expected: String, command: String },
+    InvalidHeader,
     PacketToLarge,
     PaddingViolation(String),
 }
@@ -13,11 +14,17 @@ pub enum EldritchError {
 impl fmt::Display for EldritchError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            EldritchError::DataOutOfBounds => write!(f, "A Data element is out of bounds for the specified command"),
-            EldritchError::EndOfPacket => write!(f, "Attempting to retrieve more data at the end of packet"),
+            EldritchError::DataOutOfBounds => write!(
+                f,
+                "A Data element is out of bounds for the specified command"
+            ),
+            EldritchError::EndOfPacket => {
+                write!(f, "Attempting to retrieve more data at the end of packet")
+            }
             EldritchError::PacketToLarge => write!(f, "Blanking packet is larger then 255 bytes"),
-            EldritchError::InvalidHeader => write!(f, "Command Header is invlid"),
             EldritchError::InvalidCommandData => write!(f, "Command Data is invalid"),
+            EldritchError::InvalidDataType{ expected, command  }=> write!(f, "Data type provided does not match command. Command: {command} Expected: {expected}"),
+            EldritchError::InvalidHeader => write!(f, "Command Header is invlid"),
             EldritchError::PaddingViolation(msg) => write!(f, "{}", msg),
         }
     }
