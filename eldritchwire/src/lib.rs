@@ -9,6 +9,7 @@ pub struct FixedPointDecimal {
     raw_val: i16,
 }
 
+#[allow(dead_code)]
 impl FixedPointDecimal {
     const MAX: FixedPointDecimal = FixedPointDecimal { raw_val: 0x7fffu16 as i16 };
     const MIN: FixedPointDecimal = FixedPointDecimal { raw_val: 0x8000u16 as i16 };

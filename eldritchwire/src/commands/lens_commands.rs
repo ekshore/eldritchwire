@@ -256,24 +256,6 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_focus_command_below_bounds() {
-        // Value 0.0001 (ffff) is below the bounds of 0.0
-        let command_data = [0x00, 0x00, 0x80, 0x00, 0xff, 0xff];
-        let command_data = CommandData::new(&command_data).expect("Data has correct length");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
-    }
-
-    #[test]
-    fn parse_focus_command_above_bounds() {
-        // Value 1.1 (08cc) is greater the bound of 1.0
-        let command_data = [0x00, 0x00, 0x80, 0x00, 0xcc, 0x08];
-        let command_data = CommandData::new(&command_data).expect("Data has correct length");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
-    }
-
-    #[test]
     fn parse_auto_focus_command() {
         let command_packet_data = [0x00, 0x01, 0x00, 0x00];
         let command_data = CommandData::new(&command_packet_data).expect("Known good packet data");
@@ -295,15 +277,6 @@ mod lens_commands_tests {
                 }
             ))
         );
-    }
-
-    #[test]
-    fn parse_apature_fstop_command_below_bounds() {
-        // Value -1.1 (f734) is below the lower bound of -1
-        let command_data = [0x00, 0x02, 0x80, 0x00, 0x34, 0xf7];
-        let command_data = CommandData::new(&command_data).expect("Known good packet data");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
     }
 
     #[test]
@@ -342,24 +315,6 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_apature_normalized_command_below_bounds() {
-        // Value -0.1 is below the bound of 0.0
-        let command_data = [0x00, 0x03, 0x80, 0x00, 0xff, 0xff];
-        let command_data = CommandData::new(&command_data).expect("Known good packet data");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
-    }
-
-    #[test]
-    fn parse_apature_normalized_command_above_bounds() {
-        // Value 1.1 is above the bound of 1.0
-        let command_data = [0x00, 0x03, 0x80, 0x00, 0xcc, 0x08];
-        let command_data = CommandData::new(&command_data).expect("Known good command data");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
-    }
-
-    #[test]
     fn parse_apature_ordinal_assign() {
         let command_data = [0x00, 0x04, 0x02, 0x00, 0x10, 0x27];
         let command_data = CommandData::new(&command_data).expect("Known good packet data");
@@ -376,15 +331,6 @@ mod lens_commands_tests {
         let command_data = CommandData::new(&command_data).expect("Should parse");
         let command = super::parse_command(command_data);
         assert_eq!(command, Err(EldritchError::InvalidCommandData));
-    }
-
-    #[test]
-    fn parse_apature_ordinal_command_assign_below_bounds() {
-        // Value -1 is below the bound of 0.0
-        let command_data = [0x00, 0x04, 0x02, 0x00, 0xff, 0xff];
-        let command_data = CommandData::new(&command_data).expect("Known good packet data");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
     }
 
     #[test]
@@ -454,14 +400,6 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_absolute_zoom_mm_command_value_below_bounds() {
-        let command_data = [0x00, 0x07, 0x02, 0x00, 0xfe, 0xff];
-        let command_data = CommandData::new(&command_data).expect("Should parse");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
-    }
-
-    #[test]
     fn parse_absolute_zoom_normalized_command_assign() {
         let command_data = [0x00, 0x08, 0x80, 0x00, 0xff, 0x00];
         let command_data = CommandData::new(&command_data).expect("Known good packet data");
@@ -494,24 +432,6 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_absolute_zoom_normalized_command_below_bounds() {
-        // Value -0.1 is below the bound of 0.0
-        let command_data = [0x00, 0x08, 0x80, 0x00, 0xff, 0xff];
-        let command_data = CommandData::new(&command_data).expect("Known good packet data");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
-    }
-
-    #[test]
-    fn parse_absolute_zoom_normalized_command_above_bounds() {
-        // Value 1.1 is above the bound of 1.0
-        let command_data = [0x00, 0x08, 0x80, 0x00, 0xcc, 0x08];
-        let command_data = CommandData::new(&command_data).expect("Known good packet data");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
-    }
-
-    #[test]
     fn parse_absolute_zoom_normalized_command_wrong_data_type() {
         let command_data = [0x00, 0x08, 0x01, 0x00, 0xcc, 0x08];
         let command_data = CommandData::new(&command_data).expect("Known good packet");
@@ -533,28 +453,115 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_absolute_zoom_continuous_command_below_bounds() {
-        // Value -1.1 is below the bound of -1.0
-        let command_data = [0x00, 0x09, 0x80, 0x00, 0x34, 0xf7];
-        let command_data = CommandData::new(&command_data).expect("Known good packet data");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
-    }
-
-    #[test]
-    fn parse_absolute_zoom_continuous_command_above_bounds() {
-        // Value 1.1 is above the bound of 1.0
-        let command_data = [0x00, 0x09, 0x80, 0x00, 0xcc, 0x08];
-        let command_data = CommandData::new(&command_data).expect("Known good packet data");
-        let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::DataOutOfBounds));
-    }
-
-    #[test]
     fn parse_absolute_zoom_continuous_command_wrong_data_type() {
         let command_data = [0x00, 0x09, 0x01, 0x00, 0xcc, 0x08];
         let command_data = CommandData::new(&command_data).expect("Known good packet");
         let command = super::parse_command(command_data);
         assert_eq!(command, Err(EldritchError::InvalidCommandData));
+    }
+
+    #[allow(unexpected_cfgs)]
+    #[cfg(feature = "bounds-checked")]
+    mod check_bounds {
+        use crate::{commands::CommandData, error::EldritchError};
+
+        #[test]
+        fn parse_focus_command_below_bounds() {
+            // Value 0.0001 (ffff) is below the bounds of 0.0
+            let command_data = [0x00, 0x00, 0x80, 0x00, 0xff, 0xff];
+            let command_data = CommandData::new(&command_data).expect("Data has correct length");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+
+        #[test]
+        fn parse_focus_command_above_bounds() {
+            // Value 1.1 (08cc) is greater the bound of 1.0
+            let command_data = [0x00, 0x00, 0x80, 0x00, 0xcc, 0x08];
+            let command_data = CommandData::new(&command_data).expect("Data has correct length");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+
+        #[test]
+        fn parse_apature_fstop_command_below_bounds() {
+            // Value -1.1 (f734) is below the lower bound of -1
+            let command_data = [0x00, 0x02, 0x80, 0x00, 0x34, 0xf7];
+            let command_data = CommandData::new(&command_data).expect("Known good packet data");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+
+        #[test]
+        fn parse_apature_normalized_command_below_bounds() {
+            // Value -0.1 is below the bound of 0.0
+            let command_data = [0x00, 0x03, 0x80, 0x00, 0xff, 0xff];
+            let command_data = CommandData::new(&command_data).expect("Known good packet data");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+
+        #[test]
+        fn parse_apature_normalized_command_above_bounds() {
+            // Value 1.1 is above the bound of 1.0
+            let command_data = [0x00, 0x03, 0x80, 0x00, 0xcc, 0x08];
+            let command_data = CommandData::new(&command_data).expect("Known good command data");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+
+        #[test]
+        fn parse_apature_ordinal_command_assign_below_bounds() {
+            // Value -1 is below the bound of 0.0
+            let command_data = [0x00, 0x04, 0x02, 0x00, 0xff, 0xff];
+            let command_data = CommandData::new(&command_data).expect("Known good packet data");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+
+        #[test]
+        fn parse_absolute_zoom_mm_command_value_below_bounds() {
+            let command_data = [0x00, 0x07, 0x02, 0x00, 0xfe, 0xff];
+            let command_data = CommandData::new(&command_data).expect("Should parse");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+        
+        #[test]
+        fn parse_absolute_zoom_normalized_command_below_bounds() {
+            // Value -0.1 is below the bound of 0.0
+            let command_data = [0x00, 0x08, 0x80, 0x00, 0xff, 0xff];
+            let command_data = CommandData::new(&command_data).expect("Known good packet data");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+
+        #[test]
+        fn parse_absolute_zoom_normalized_command_above_bounds() {
+            // Value 1.1 is above the bound of 1.0
+            let command_data = [0x00, 0x08, 0x80, 0x00, 0xcc, 0x08];
+            let command_data = CommandData::new(&command_data).expect("Known good packet data");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+
+        #[test]
+        fn parse_absolute_zoom_continuous_command_below_bounds() {
+            // Value -1.1 is below the bound of -1.0
+            let command_data = [0x00, 0x09, 0x80, 0x00, 0x34, 0xf7];
+            let command_data = CommandData::new(&command_data).expect("Known good packet data");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+
+        #[test]
+        fn parse_absolute_zoom_continuous_command_above_bounds() {
+            // Value 1.1 is above the bound of 1.0
+            let command_data = [0x00, 0x09, 0x80, 0x00, 0xcc, 0x08];
+            let command_data = CommandData::new(&command_data).expect("Known good packet data");
+            let command = super::parse_command(command_data);
+            assert_eq!(command, Err(EldritchError::DataOutOfBounds));
+        }
+
     }
 }

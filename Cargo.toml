@@ -10,5 +10,3 @@ members = [
 version = "0.1.0"
 edition = "2021"
 authors = ["Caleb Ekstrand <ekstrand.caleb@ekshore.net>"]
-
-
