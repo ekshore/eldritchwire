@@ -10,6 +10,14 @@ pub struct FixedPointDecimal {
 }
 
 impl FixedPointDecimal {
+    const MAX: FixedPointDecimal = FixedPointDecimal { raw_val: 0x7fffu16 as i16 };
+    const MIN: FixedPointDecimal = FixedPointDecimal { raw_val: 0x8000u16 as i16 };
+
+    // pub fn from_real_val(val: f32) -> Self {
+    //     let raw_val = val * 2_f32.powi(11);
+    //     FixedPointDecimal { raw_val }
+    // }
+
     pub fn get_real_val(&self) -> f32 {
         f32::from(self.raw_val) / 2_f32.powi(11)
     }
@@ -25,6 +33,16 @@ impl FixedPointDecimal {
         }
     }
 }
+
+// impl Limit for FixedPointDecimal {
+//     fn max_val() -> Self {
+//         Self::from_real_val(15.9995)
+//     }
+//
+//     fn min_val() -> Self {
+//         Self::from_real_val(-16_f32)
+//     }
+// }
 
 impl Debug for FixedPointDecimal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -207,6 +225,16 @@ mod fixed_point_test {
         let float_value = minus_point_three.get_rounded_val();
         assert_eq!(float_value, -0.3_f32);
     }
+
+    #[test]
+    fn fpd_max() {
+        assert_eq!(15.999512_f32, FixedPointDecimal::MAX.get_real_val());
+    }
+
+    #[test]
+    fn fdp_min() {
+        assert_eq!(-16.0_f32, FixedPointDecimal::MIN.get_real_val());
+    }
 }
 
 #[cfg(test)]
@@ -345,7 +373,7 @@ mod packet_data_test {
 #[cfg(test)]
 mod lib_test {
     use super::*;
-    use crate::commands::{Command, lens_commands::LensCommand};
+    use crate::commands::{lens_commands::LensCommand, Command};
 
     #[test]
     fn parse_packet_single_command() {

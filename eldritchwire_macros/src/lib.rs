@@ -1,56 +1,146 @@
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Error, Result};
+use syn::{parenthesized, parse_macro_input, DeriveInput, Error, Ident, Result};
 
-
-#[proc_macro_derive(CommandGroup, attributes(parameter, data_type))]
-pub fn command_group(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(CommandGroup, attributes(parameter, data_type, command))]
+pub fn command_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
-    let commands:Result<Vec<_>> = if let syn::Data::Enum(data) = input.data {
-         data
-            .variants
+    let commands: Result<Vec<_>> = if let syn::Data::Enum(data) = &input.data {
+        data.variants
             .iter()
-            .map(|variant| handle_variant(variant))
+            .map(|variant| handle_variant_single_attr(variant))
             .collect()
     } else {
-        Err(Error::new_spanned(input, "CommandGroup must be an enum"))
+        Err(Error::new_spanned(&input, "CommandGroup must be an enum"))
     };
 
-    panic!("Commands {:#?}", commands);
+    let parse_command_fn = build_parse_command_fn(name, &commands.expect("Commands are expected"));
 
-    TokenStream::from(quote!())
+    TokenStream::from(quote! {
+        #parse_command_fn
+    })
+    .into()
 }
+
+fn build_parse_command_fn(name: &Ident, commands: &Vec<CommandMetaData>) -> TokenStream {
+    let match_branches: Vec<proc_macro2::TokenStream> = commands
+        .iter()
+        .map(|variant| {
+            let variant_name = variant.name;
+            let param = &variant.parameter;
+            let variant_parser = build_variant_parser(&name, variant);
+            let arm_return = if let Some(_) = variant.data_type {
+                quote! { #variant_parser, }
+            } else {
+                quote! { Ok(#name::#variant_name), }
+            };
+            quote! { #param => #arm_return }
+        })
+        .collect();
+
+    let parse_command_function = quote! {
+        pub fn parse_command(command_data: CommandData) -> Result<#name, EldritchError> {
+            match command_data.parameter() {
+                #(#match_branches)*
+                _ => Err(EldritchError::InvalidCommandData),
+            }
+        }
+    };
+
+    TokenStream::from(parse_command_function)
+}
+
+fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream {
+    let command_name = &command.name;
+    let data_type = command.data_type;
+    let data = match data_type {
+        Some(0x00) => {
+            return quote! {
+                Ok(#name::#command_name(
+                        if *command_data.operation() == 0 {
+                            Operation::Assign
+                        } else {
+                            return Err(EldritchError::InvalidCommandData);
+                        },
+                        command_data.data_buff()[0] != 0,
+                ))
+            }
+        }
+        Some(0x01) => todo!("i8"),
+        Some(0x02) => quote! { let data = i16::from_le_bytes(data); },
+        Some(0x03) => todo!("i32"),
+        Some(0x04) => todo!("i64"),
+        Some(0x05) => todo!("String"),
+        Some(0x80) => {
+            quote! { let data = FixedPointDecimal::from_data(data); }
+        }
+        Some(_) => todo!(),
+        None => return quote! {},
+    };
+
+    let inc_or_toggle = if let Some(data_type) = command.data_type {
+        if data_type == 0x00 {
+            quote! { Operation::Toggle }
+        } else {
+            quote! { Operation::Increment }
+        }
+    } else {
+        quote! {}
+    };
+
+    TokenStream::from(quote! {
+        if *command_data.data_type() == #data_type {
+            if let Ok(data) = command_data.data_buff().try_into() {
+                #data
+                Ok(#name::#command_name(
+                    if *command_data.operation() == 0 {
+                        Operation::Assign
+                    } else {
+                        #inc_or_toggle
+                    },
+                    data
+                ))
+            } else {
+                Err(EldritchError::InvalidCommandData)
+            }
+        } else {
+            Err(EldritchError::InvalidCommandData)
+        }
+    })
+}
+
+// #[derive(PartialEq)]
+// struct DataBounds {
+//     upper: Option<syn::Lit>,
+//     lower: Option<syn::Lit>,
+// }
 
 #[derive(Debug, PartialEq)]
-enum CommandAttribute {
-    Parameter(u8),
-    DataType(u8),
-}
-
-#[derive(Debug)]
-struct CommandMetaData {
-    name: String,
+struct CommandMetaData<'a> {
+    name: &'a Ident,
     parameter: u8,
     data_type: Option<u8>,
+    // bounds: Option<DataBounds>,
 }
 
 #[derive(Default)]
-struct CommandMetaDataBuilder {
-    name: Option<String>,
+struct CommandMetaDataBuilder<'a> {
+    name: Option<&'a Ident>,
     parameter: Option<u8>,
     data_type: Option<u8>,
+    // bounds: Option<DataBounds>,
 }
 
-impl CommandMetaData {
-    pub fn builder() -> CommandMetaDataBuilder {
+impl CommandMetaData<'_> {
+    pub fn builder() -> CommandMetaDataBuilder<'static> {
         CommandMetaDataBuilder::default()
     }
 }
 
-impl CommandMetaDataBuilder {
-    pub fn name(mut self, name: String) -> Self {
+impl<'a> CommandMetaDataBuilder<'a> {
+    pub fn name(mut self, name: &'a Ident) -> Self {
         self.name = Some(name);
         self
     }
@@ -60,63 +150,128 @@ impl CommandMetaDataBuilder {
         self
     }
 
-    pub fn data_type(mut self, data_type: u8) -> Self {
-        self.data_type = Some(data_type);
+    pub fn data_type(mut self, data_type: Option<u8>) -> Self {
+        self.data_type = data_type;
         self
     }
 
-    pub fn build(self) -> Result<CommandMetaData> {
+    // pub fn bounds(mut self, bounds: DataBounds) -> Self {
+    //     self.bounds = Some(bounds);
+    //     self
+    // }
+
+    pub fn build(self) -> Result<CommandMetaData<'a>> {
         Ok(CommandMetaData {
-            name: self.name.unwrap(),
-            parameter: self.parameter.unwrap(),
+            name: self.name.expect("name is required"),
+            parameter: self.parameter.expect("parameter is required"),
             data_type: self.data_type,
+            // bounds: self.bounds,
         })
     }
 }
-fn handle_variant(variant: &syn::Variant) -> Result<CommandMetaData> {
-    let builder = CommandMetaData::builder()
-        .name(variant.ident.to_string());
-    let attrs: Result<Vec<_>> = variant.attrs
-        .iter()
-        .map(|attr| handle_attr(attr))
-        .collect();
 
-    let builder = attrs?.iter().fold(builder, |builder, attr| { 
-            match attr {
-                CommandAttribute::Parameter(val) => builder.parameter(*val),
-                CommandAttribute::DataType(val) => builder.data_type(*val),
-            }
-        });
+fn handle_variant_single_attr(variant: &syn::Variant) -> Result<CommandMetaData> {
+    let mut parameter = 0;
+    let mut data_type = None;
+    // let mut bounds = DataBounds {
+    //     lower: None,
+    //     upper: None,
+    // };
+    for attr in &variant.attrs {
+        if attr.path().is_ident("command") {
+            attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("parameter") {
+                    let content;
+                    parenthesized!(content in meta.input);
+                    let lit: syn::LitInt = content.parse()?;
+                    let val: u8 = lit.base10_parse()?;
+                    parameter = val;
+                }
 
-    builder.build()
-}
+                if meta.path.is_ident("data_type") {
+                    let content;
+                    parenthesized!(content in meta.input);
+                    let lit: syn::LitInt = content.parse()?;
+                    let val: u8 = lit.base10_parse()?;
+                    data_type = Some(val);
+                }
 
-fn handle_attr(attr: &syn::Attribute) -> Result<CommandAttribute> {
-    match &attr.meta {
-        syn::Meta::NameValue(val) if attr.path().is_ident("parameter") => {
-            Ok(CommandAttribute::Parameter(parse_int_attr_val(val)?))
+                // if meta.path.is_ident("bounds") {
+                //     meta.parse_nested_meta(|inner_meta| {
+                //         if inner_meta.path.is_ident("lower") {
+                //             let content;
+                //             parenthesized!(content in meta.input);
+                //             let lit: syn::Lit = content.parse()?;
+                //             bounds.lower = Some(lit);
+                //         }
+                //
+                //         if inner_meta.path.is_ident("upper") {
+                //             let content;
+                //             parenthesized!(content in meta.input);
+                //             let lit: syn::Lit = content.parse()?;
+                //             bounds.upper = Some(lit);
+                //         }
+                //         Ok(())
+                //     })?;
+                // }
+                Ok(())
+            })?;
         }
-        syn::Meta::NameValue(val) if attr.path().is_ident("data_type") => {
-            Ok(CommandAttribute::DataType(parse_int_attr_val(val)?))
-        }
-        _ => todo!(),
     }
+    CommandMetaData::builder()
+        .name(&variant.ident)
+        .parameter(parameter)
+        .data_type(data_type)
+        .build()
 }
 
-fn parse_int_attr_val(val: &syn::MetaNameValue) -> Result<u8> {
-    if let syn::Expr::Lit(val) = &val.value {
-        if let syn::Lit::Int(val) = &val.lit {
-            Ok(val.base10_parse()?)
-        } else {
-            Err(Error::new_spanned(
-                val,
-                "Attribute Value must be an Integer",
-            ))
-        }
-    } else {
-        Err(Error::new_spanned(
-            val,
-            "Attribute Value must be an expression",
-        ))
+#[cfg(test)]
+mod macro_tests {
+    use super::*;
+    use proc_macro2::Span;
+    use syn::parse_quote;
+
+    #[test]
+    fn handle_variant_single_attr_test() {
+        let input: syn::ItemEnum = parse_quote! {
+            enum LensCommands {
+                #[command(parameter(0x00), data_type(128))]
+                Focus(Operation, FixedPointDecimal),
+            }
+        };
+
+        let variant = input.variants.get(0).unwrap();
+        let output = handle_variant_single_attr(variant);
+
+        assert_eq!(
+            output.unwrap(),
+            CommandMetaData {
+                name: &Ident::new("Focus", Span::call_site()),
+                parameter: 0,
+                data_type: Some(128),
+            }
+        );
+    }
+
+    #[test]
+    fn handle_variant_single_attr_order_test() {
+        let input: syn::ItemEnum = parse_quote! {
+            enum LensCommands {
+                #[command(data_type(128), parameter(0x00))]
+                Focus(Operation, FixedPointDecimal),
+            }
+        };
+
+        let variant = input.variants.get(0).unwrap();
+        let output = handle_variant_single_attr(variant);
+
+        assert_eq!(
+            output.unwrap(),
+            CommandMetaData {
+                name: &Ident::new("Focus", Span::call_site()),
+                parameter: 0,
+                data_type: Some(128),
+            }
+        );
     }
 }
