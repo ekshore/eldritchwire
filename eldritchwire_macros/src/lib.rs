@@ -10,7 +10,7 @@ pub fn command_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     let commands: Result<Vec<_>> = if let syn::Data::Enum(data) = &input.data {
         data.variants
             .iter()
-            .map(|variant| handle_variant_single_attr(variant))
+            .map(|variant| handle_variant_attr(variant))
             .collect()
     } else {
         Err(Error::new_spanned(&input, "CommandGroup must be an enum"))
@@ -111,18 +111,20 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
     })
 }
 
-// #[derive(PartialEq)]
-// struct DataBounds {
-//     upper: Option<syn::Lit>,
-//     lower: Option<syn::Lit>,
-// }
+#[cfg(feature = "bounds-checked")]
+#[derive(PartialEq)]
+struct DataBounds {
+    upper: Option<syn::Lit>,
+    lower: Option<syn::Lit>,
+}
 
 #[derive(Debug, PartialEq)]
 struct CommandMetaData<'a> {
     name: &'a Ident,
     parameter: u8,
     data_type: Option<u8>,
-    // bounds: Option<DataBounds>,
+    #[cfg(feature = "bounds-checked")]
+    bounds: Option<DataBounds>,
 }
 
 #[derive(Default)]
@@ -130,7 +132,8 @@ struct CommandMetaDataBuilder<'a> {
     name: Option<&'a Ident>,
     parameter: Option<u8>,
     data_type: Option<u8>,
-    // bounds: Option<DataBounds>,
+    #[cfg(feature = "bounds-checked")]
+    bounds: Option<DataBounds>,
 }
 
 impl CommandMetaData<'_> {
@@ -155,28 +158,31 @@ impl<'a> CommandMetaDataBuilder<'a> {
         self
     }
 
-    // pub fn bounds(mut self, bounds: DataBounds) -> Self {
-    //     self.bounds = Some(bounds);
-    //     self
-    // }
+    #[cfg(feature = "bounds-checked")]
+    pub fn bounds(mut self, bounds: DataBounds) -> Self {
+        self.bounds = Some(bounds);
+        self
+    }
 
     pub fn build(self) -> Result<CommandMetaData<'a>> {
         Ok(CommandMetaData {
             name: self.name.expect("name is required"),
             parameter: self.parameter.expect("parameter is required"),
             data_type: self.data_type,
-            // bounds: self.bounds,
+            #[cfg(feature = "bounds-checked")]
+            bounds: self.bounds,
         })
     }
 }
 
-fn handle_variant_single_attr(variant: &syn::Variant) -> Result<CommandMetaData> {
+fn handle_variant_attr(variant: &syn::Variant) -> Result<CommandMetaData> {
     let mut parameter = 0;
     let mut data_type = None;
-    // let mut bounds = DataBounds {
-    //     lower: None,
-    //     upper: None,
-    // };
+    #[cfg(feature = "bounds-checked")]
+    let mut bounds = DataBounds {
+        lower: None,
+        upper: None,
+    };
     for attr in &variant.attrs {
         if attr.path().is_ident("command") {
             attr.parse_nested_meta(|meta| {
@@ -196,24 +202,25 @@ fn handle_variant_single_attr(variant: &syn::Variant) -> Result<CommandMetaData>
                     data_type = Some(val);
                 }
 
-                // if meta.path.is_ident("bounds") {
-                //     meta.parse_nested_meta(|inner_meta| {
-                //         if inner_meta.path.is_ident("lower") {
-                //             let content;
-                //             parenthesized!(content in meta.input);
-                //             let lit: syn::Lit = content.parse()?;
-                //             bounds.lower = Some(lit);
-                //         }
-                //
-                //         if inner_meta.path.is_ident("upper") {
-                //             let content;
-                //             parenthesized!(content in meta.input);
-                //             let lit: syn::Lit = content.parse()?;
-                //             bounds.upper = Some(lit);
-                //         }
-                //         Ok(())
-                //     })?;
-                // }
+                #[cfg(feature = "bounds-checked")]
+                if meta.path.is_ident("bounds") {
+                    meta.parse_nested_meta(|inner_meta| {
+                        if inner_meta.path.is_ident("lower") {
+                            let content;
+                            parenthesized!(content in meta.input);
+                            let lit: syn::Lit = content.parse()?;
+                            bounds.lower = Some(lit);
+                        }
+
+                        if inner_meta.path.is_ident("upper") {
+                            let content;
+                            parenthesized!(content in meta.input);
+                            let lit: syn::Lit = content.parse()?;
+                            bounds.upper = Some(lit);
+                        }
+                        Ok(())
+                    })?;
+                }
                 Ok(())
             })?;
         }
@@ -241,7 +248,7 @@ mod macro_tests {
         };
 
         let variant = input.variants.get(0).unwrap();
-        let output = handle_variant_single_attr(variant);
+        let output = handle_variant_attr(variant);
 
         assert_eq!(
             output.unwrap(),
@@ -263,7 +270,7 @@ mod macro_tests {
         };
 
         let variant = input.variants.get(0).unwrap();
-        let output = handle_variant_single_attr(variant);
+        let output = handle_variant_attr(variant);
 
         assert_eq!(
             output.unwrap(),
