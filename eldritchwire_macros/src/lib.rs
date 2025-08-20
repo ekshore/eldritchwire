@@ -8,19 +8,16 @@ pub fn command_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     let name = &input.ident;
 
     let commands: Result<Vec<_>> = if let syn::Data::Enum(data) = &input.data {
-        data.variants
-            .iter()
-            .map(|variant| handle_variant_attr(variant))
-            .collect()
+        data.variants.iter().map(handle_variant_attr).collect()
     } else {
         Err(Error::new_spanned(&input, "CommandGroup must be an enum"))
     };
 
     let parse_command_fn = build_parse_command_fn(name, &commands.expect("Commands are expected"));
 
-    TokenStream::from(quote! {
+    quote! {
         #parse_command_fn
-    })
+    }
     .into()
 }
 
@@ -30,8 +27,8 @@ fn build_parse_command_fn(name: &Ident, commands: &Vec<CommandMetaData>) -> Toke
         .map(|variant| {
             let variant_name = variant.name;
             let param = &variant.parameter;
-            let variant_parser = build_variant_parser(&name, variant);
-            let arm_return = if let Some(_) = variant.data_type {
+            let variant_parser = build_variant_parser(name, variant);
+            let arm_return = if variant.data_type.is_some() {
                 quote! { #variant_parser, }
             } else {
                 quote! { Ok(#name::#variant_name), }
@@ -40,16 +37,14 @@ fn build_parse_command_fn(name: &Ident, commands: &Vec<CommandMetaData>) -> Toke
         })
         .collect();
 
-    let parse_command_function = quote! {
+    quote! {
         pub fn parse_command(command_data: CommandData) -> Result<#name, EldritchError> {
             match command_data.parameter() {
                 #(#match_branches)*
                 _ => Err(EldritchError::InvalidCommandData),
             }
         }
-    };
-
-    TokenStream::from(parse_command_function)
+    }
 }
 
 fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream {
@@ -73,11 +68,86 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
         Some(0x03) => todo!("i32"),
         Some(0x04) => todo!("i64"),
         Some(0x05) => todo!("String"),
-        Some(0x80) => {
-            quote! { let data = FixedPointDecimal::from_data(data); }
-        }
+        Some(0x80) => quote! { let data = FixedPointDecimal::from_data(data); },
         Some(_) => todo!(),
         None => return quote! {},
+    };
+
+    #[cfg(feature = "bounds-checked")]
+    let bounds_check = if let Some(bounds) = &command.bounds {
+        match data_type {
+            // Some(0x00) => todo!("bool"),
+            Some(0x01) => todo!("i8"),
+            Some(0x02) => {
+                let lower = if let Some(lower) = &bounds.lower {
+                    if let syn::Lit::Int(constraint) = lower {
+                        constraint
+                            .base10_parse::<i16>()
+                            .expect("Should be a valid i16")
+                    } else {
+                        panic!("Inalid state");
+                    }
+                } else {
+                    i16::MIN
+                };
+
+                let upper = if let Some(upper) = &bounds.upper {
+                    if let syn::Lit::Int(constraint) = upper {
+                        constraint
+                            .base10_parse::<i16>()
+                            .expect("Should be a valid i16")
+                    } else {
+                        panic!("Invalid state");
+                    }
+                } else {
+                    i16::MAX
+                };
+
+                quote! {
+                    if !(#lower..=#upper).contains(&data) {
+                        Err(EldritchError::DataOutOfBounds)
+                    } else
+                }
+            }
+            Some(0x03) => todo!("i32"),
+            Some(0x04) => todo!("i64"),
+            Some(0x05) => todo!("String"),
+            Some(0x80) => {
+                let lower = if let Some(lower) = &bounds.lower {
+                    if let syn::Lit::Float(constraint) = lower {
+                        constraint
+                            .base10_parse::<f32>()
+                            .expect("Should be a valid f32")
+                    } else {
+                        panic!("Inalid state");
+                    }
+                } else {
+                    -16.0
+                };
+
+                let upper = if let Some(upper) = &bounds.upper {
+                    if let syn::Lit::Float(constraint) = upper {
+                        constraint
+                            .base10_parse::<f32>()
+                            .expect("Should be a valid f32")
+                    } else {
+                        panic!("Invalid state");
+                    }
+                } else {
+                    15.9995
+                };
+
+                quote! {
+                    if !(#lower..=#upper).contains(&data.get_real_val()) {
+                        Err(EldritchError::DataOutOfBounds)
+                    } else
+                }
+            },
+            Some(_) => todo!(),
+            None => return quote! {},
+        }
+    } else {
+        quote! {}
     };
 
     let inc_or_toggle = if let Some(data_type) = command.data_type {
@@ -90,29 +160,31 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
         quote! {}
     };
 
-    TokenStream::from(quote! {
+    quote! {
         if *command_data.data_type() == #data_type {
             if let Ok(data) = command_data.data_buff().try_into() {
                 #data
-                Ok(#name::#command_name(
-                    if *command_data.operation() == 0 {
-                        Operation::Assign
-                    } else {
-                        #inc_or_toggle
-                    },
-                    data
-                ))
+                #bounds_check {
+                    Ok(#name::#command_name(
+                        if *command_data.operation() == 0 {
+                            Operation::Assign
+                        } else {
+                            #inc_or_toggle
+                        },
+                        data
+                    ))
+                }
             } else {
                 Err(EldritchError::InvalidCommandData)
             }
         } else {
             Err(EldritchError::InvalidCommandData)
         }
-    })
+    }
 }
 
 #[cfg(feature = "bounds-checked")]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 struct DataBounds {
     upper: Option<syn::Lit>,
     lower: Option<syn::Lit>,
@@ -160,7 +232,11 @@ impl<'a> CommandMetaDataBuilder<'a> {
 
     #[cfg(feature = "bounds-checked")]
     pub fn bounds(mut self, bounds: DataBounds) -> Self {
-        self.bounds = Some(bounds);
+        self.bounds = if bounds.upper.is_some() || bounds.lower.is_some() {
+            Some(bounds)
+        } else {
+            None
+        };
         self
     }
 
@@ -178,11 +254,13 @@ impl<'a> CommandMetaDataBuilder<'a> {
 fn handle_variant_attr(variant: &syn::Variant) -> Result<CommandMetaData> {
     let mut parameter = 0;
     let mut data_type = None;
+
     #[cfg(feature = "bounds-checked")]
     let mut bounds = DataBounds {
         lower: None,
         upper: None,
     };
+
     for attr in &variant.attrs {
         if attr.path().is_ident("command") {
             attr.parse_nested_meta(|meta| {
@@ -207,14 +285,14 @@ fn handle_variant_attr(variant: &syn::Variant) -> Result<CommandMetaData> {
                     meta.parse_nested_meta(|inner_meta| {
                         if inner_meta.path.is_ident("lower") {
                             let content;
-                            parenthesized!(content in meta.input);
+                            parenthesized!(content in inner_meta.input);
                             let lit: syn::Lit = content.parse()?;
                             bounds.lower = Some(lit);
                         }
 
                         if inner_meta.path.is_ident("upper") {
                             let content;
-                            parenthesized!(content in meta.input);
+                            parenthesized!(content in inner_meta.input);
                             let lit: syn::Lit = content.parse()?;
                             bounds.upper = Some(lit);
                         }
@@ -225,11 +303,14 @@ fn handle_variant_attr(variant: &syn::Variant) -> Result<CommandMetaData> {
             })?;
         }
     }
-    CommandMetaData::builder()
+    let builder = CommandMetaData::builder()
         .name(&variant.ident)
         .parameter(parameter)
-        .data_type(data_type)
-        .build()
+        .data_type(data_type);
+
+    #[cfg(feature = "bounds-checked")]
+    let builder = builder.bounds(bounds);
+    builder.build()
 }
 
 #[cfg(test)]
@@ -256,6 +337,8 @@ mod macro_tests {
                 name: &Ident::new("Focus", Span::call_site()),
                 parameter: 0,
                 data_type: Some(128),
+                #[cfg(feature = "bounds-checked")]
+                bounds: None,
             }
         );
     }
@@ -278,6 +361,8 @@ mod macro_tests {
                 name: &Ident::new("Focus", Span::call_site()),
                 parameter: 0,
                 data_type: Some(128),
+                #[cfg(feature = "bounds-checked")]
+                bounds: None,
             }
         );
     }
