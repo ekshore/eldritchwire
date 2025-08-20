@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::{FixedPointDecimal, Operation, error::EldritchError};
 use eldritchwire_macros::CommandGroup;
 
@@ -5,19 +6,19 @@ use super::CommandData;
 
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum LensCommand {
-    #[command(parameter(0x00), data_type(128))]
+    #[command(parameter(0x00), data_type(128), bounds(lower(0.0), upper(1.0)))]
     Focus(Operation, FixedPointDecimal),
 
     #[command(parameter(0x01))]
     InstantaneousAutoFocus,
 
-    #[command(parameter(0x02), data_type(128))]
+    #[command(parameter(0x02), data_type(128), bounds(lower(-1.0), upper(16.0)))]
     ApatureFStop(Operation, FixedPointDecimal),
 
-    #[command(parameter(0x03), data_type(128))]
+    #[command(parameter(0x03), data_type(128), bounds(lower(0.0), upper(1.0)))]
     ApatureNormalized(Operation, FixedPointDecimal),
 
-    #[command(parameter(0x04), data_type(2))]
+    #[command(parameter(0x04), data_type(2), bounds(lower(0)))]
     ApatureOrdinal(Operation, i16),
 
     #[command(parameter(0x05))]
@@ -26,13 +27,13 @@ pub enum LensCommand {
     #[command(parameter(0x06), data_type(0))]
     OpticalImageStabalization(Operation, bool),
 
-    #[command(parameter(0x07), data_type(2))]
+    #[command(parameter(0x07), data_type(2), bounds(lower(0)))]
     AbsoluteZoomMM(Operation, i16),
 
-    #[command(parameter(0x08), data_type(128))]
+    #[command(parameter(0x08), data_type(128), bounds(lower(0.0), upper(1.0)))]
     AbsoluteZoomNormalized(Operation, FixedPointDecimal),
 
-    #[command(parameter(0x09), data_type(128))]
+    #[command(parameter(0x09), data_type(128), bounds(lower(-1.0), upper(1.0)))]
     AbsoluteZoomContinuous(Operation, FixedPointDecimal),
 }
 
