@@ -8,5 +8,5 @@ authors.workspace = true
 eldritchwire_macros = { path = "../eldritchwire_macros" }
 
 [features]
-"default" = []
+"default" = ["bounds-checked"]
 "bounds-checked" = []
