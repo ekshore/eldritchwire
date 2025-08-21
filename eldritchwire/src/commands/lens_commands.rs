@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use crate::{FixedPointDecimal, Operation, error::EldritchError};
 use eldritchwire_macros::CommandGroup;
 
