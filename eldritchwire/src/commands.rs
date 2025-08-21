@@ -12,11 +12,6 @@ pub enum Command {
 #[derive(Debug, PartialEq)]
 pub struct CommandData<'a> {
     bytes: &'a [u8],
-    // category: &'a u8,
-    // parameter: &'a u8,
-    // data_type: &'a u8,
-    // operation: &'a u8,
-    // data_buff: &'a [u8],
 }
 
 impl<'a> CommandData<'a> {
@@ -57,7 +52,6 @@ impl CommandData<'_> {
 pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
     if let Ok(cmd_data) = CommandData::new(cmd_buffer) {
         let command = match cmd_data.category() {
-            // 0x00 => Command::Lens(lens_commands::parse_lens_command(cmd_data)?),
             0x00 => Command::Lens(lens_commands::parse_command(cmd_data)?),
             _ => todo!("Command category has either not been implemented or is invalid"),
         };
