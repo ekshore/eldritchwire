@@ -21,6 +21,68 @@ pub fn command_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     .into()
 }
 
+fn handle_variant_attr(variant: &syn::Variant) -> Result<CommandMetaData<'_>> {
+    let mut parameter = 0;
+    let mut data_type = None;
+
+    #[cfg(feature = "bounds-checked")]
+    let mut bounds = DataBounds {
+        lower: None,
+        upper: None,
+    };
+
+    for attr in &variant.attrs {
+        if attr.path().is_ident("command") {
+            attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("parameter") {
+                    let content;
+                    parenthesized!(content in meta.input);
+                    let lit: syn::LitInt = content.parse()?;
+                    let val: u8 = lit.base10_parse()?;
+                    parameter = val;
+                }
+
+                if meta.path.is_ident("data_type") {
+                    let content;
+                    parenthesized!(content in meta.input);
+                    let lit: syn::LitInt = content.parse()?;
+                    let val: u8 = lit.base10_parse()?;
+                    data_type = Some(val);
+                }
+
+                #[cfg(feature = "bounds-checked")]
+                if meta.path.is_ident("bounds") {
+                    meta.parse_nested_meta(|inner_meta| {
+                        if inner_meta.path.is_ident("lower") {
+                            let content;
+                            parenthesized!(content in inner_meta.input);
+                            let lit: syn::Lit = content.parse()?;
+                            bounds.lower = Some(lit);
+                        }
+
+                        if inner_meta.path.is_ident("upper") {
+                            let content;
+                            parenthesized!(content in inner_meta.input);
+                            let lit: syn::Lit = content.parse()?;
+                            bounds.upper = Some(lit);
+                        }
+                        Ok(())
+                    })?;
+                }
+                Ok(())
+            })?;
+        }
+    }
+    let builder = CommandMetaData::builder()
+        .name(&variant.ident)
+        .parameter(parameter)
+        .data_type(data_type);
+
+    #[cfg(feature = "bounds-checked")]
+    let builder = builder.bounds(bounds);
+    builder.build()
+}
+
 fn build_parse_command_fn(name: &Ident, commands: &Vec<CommandMetaData>) -> TokenStream {
     let match_branches: Vec<proc_macro2::TokenStream> = commands
         .iter()
@@ -350,68 +412,6 @@ impl<'a> CommandMetaDataBuilder<'a> {
             bounds: self.bounds,
         })
     }
-}
-
-fn handle_variant_attr(variant: &syn::Variant) -> Result<CommandMetaData<'_>> {
-    let mut parameter = 0;
-    let mut data_type = None;
-
-    #[cfg(feature = "bounds-checked")]
-    let mut bounds = DataBounds {
-        lower: None,
-        upper: None,
-    };
-
-    for attr in &variant.attrs {
-        if attr.path().is_ident("command") {
-            attr.parse_nested_meta(|meta| {
-                if meta.path.is_ident("parameter") {
-                    let content;
-                    parenthesized!(content in meta.input);
-                    let lit: syn::LitInt = content.parse()?;
-                    let val: u8 = lit.base10_parse()?;
-                    parameter = val;
-                }
-
-                if meta.path.is_ident("data_type") {
-                    let content;
-                    parenthesized!(content in meta.input);
-                    let lit: syn::LitInt = content.parse()?;
-                    let val: u8 = lit.base10_parse()?;
-                    data_type = Some(val);
-                }
-
-                #[cfg(feature = "bounds-checked")]
-                if meta.path.is_ident("bounds") {
-                    meta.parse_nested_meta(|inner_meta| {
-                        if inner_meta.path.is_ident("lower") {
-                            let content;
-                            parenthesized!(content in inner_meta.input);
-                            let lit: syn::Lit = content.parse()?;
-                            bounds.lower = Some(lit);
-                        }
-
-                        if inner_meta.path.is_ident("upper") {
-                            let content;
-                            parenthesized!(content in inner_meta.input);
-                            let lit: syn::Lit = content.parse()?;
-                            bounds.upper = Some(lit);
-                        }
-                        Ok(())
-                    })?;
-                }
-                Ok(())
-            })?;
-        }
-    }
-    let builder = CommandMetaData::builder()
-        .name(&variant.ident)
-        .parameter(parameter)
-        .data_type(data_type);
-
-    #[cfg(feature = "bounds-checked")]
-    let builder = builder.bounds(bounds);
-    builder.build()
 }
 
 #[cfg(test)]
