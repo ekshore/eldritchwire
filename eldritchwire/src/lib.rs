@@ -388,12 +388,12 @@ mod lib_test {
             println!("parse_packet_single_command() commands: {:?}", commands);
             assert_eq!(1, commands.len());
             assert_eq!(
-                Command::Lens(LensCommand::Focus(
-                    Operation::Increment,
-                    FixedPointDecimal {
+                Command::Lens(LensCommand::Focus{
+                    operation: Operation::Increment,
+                    data: FixedPointDecimal {
                         raw_val: 0x0133u16 as i16
                     }
-                )),
+                }),
                 *commands.first().expect("Length asserted to be one")
             );
         } else {
@@ -416,23 +416,23 @@ mod lib_test {
             println!("parse_packet_single_command() commands: {:?}", commands);
             assert_eq!(2, commands.len());
             assert_eq!(
-                Command::Lens(LensCommand::Focus(
-                    Operation::Increment,
-                    FixedPointDecimal {
+                Command::Lens(LensCommand::Focus{
+                    operation: Operation::Increment,
+                    data: FixedPointDecimal {
                         raw_val: 0x0133u16 as i16
                     }
-                )),
+                }),
                 *commands
                     .first()
                     .expect("Length asserted to be more then one")
             );
             assert_eq!(
-                Command::Lens(LensCommand::Focus(
-                    Operation::Increment,
-                    FixedPointDecimal {
+                Command::Lens(LensCommand::Focus{
+                    operation: Operation::Increment,
+                    data: FixedPointDecimal {
                         raw_val: 0x0133u16 as i16
                     }
-                )),
+                }),
                 *commands.get(1).expect("Length asserted to be two")
             );
         } else {

@@ -72,12 +72,12 @@ mod test {
         let command = parse_command(&command_data);
         assert_eq!(
             command,
-            Ok(Command::Lens(LensCommand::Focus(
-                Operation::Increment,
-                FixedPointDecimal {
+            Ok(Command::Lens(LensCommand::Focus{
+                operation: Operation::Increment,
+                data: FixedPointDecimal {
                     raw_val: 0x0133u16 as i16
                 }
-            )))
+            }))
         );
     }
 
@@ -87,12 +87,12 @@ mod test {
         let cmd = parse_command(&cmd_data);
         assert_eq!(
             cmd,
-            Ok(Command::Lens(LensCommand::OpticalImageStabalization(
-                Operation::Assign,
-                true
-            )))
+            Ok(Command::Lens(LensCommand::OpticalImageStabalization{
+                operation: Operation::Assign,
+                data: true
+            }))
         );
-    }
+   }
 
     #[test]
     fn parse_command_data_success() {

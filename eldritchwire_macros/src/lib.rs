@@ -53,14 +53,14 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
     let data = match data_type {
         Some(0x00) => {
             return quote! {
-                Ok(#name::#command_name(
-                        if *command_data.operation() == 0 {
+                Ok(#name::#command_name{
+                        operation: if *command_data.operation() == 0 {
                             Operation::Assign
                         } else {
                             return Err(EldritchError::InvalidCommandData);
                         },
-                        command_data.data_buff()[0] != 0,
-                ))
+                        data: command_data.data_buff()[0] != 0,
+                })
             }
         }
         Some(0x01) => quote! { let data = i8::from_le_bytes(data); },
@@ -255,14 +255,14 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
             if let Ok(data) = command_data.data_buff().try_into() {
                 #data
                 #bounds_check {
-                    Ok(#name::#command_name(
-                        if *command_data.operation() == 0 {
+                    Ok(#name::#command_name{
+                        operation: if *command_data.operation() == 0 {
                             Operation::Assign
                         } else {
                             #inc_or_toggle
                         },
                         data
-                    ))
+                    })
                 }
             } else {
                 Err(EldritchError::InvalidCommandData)

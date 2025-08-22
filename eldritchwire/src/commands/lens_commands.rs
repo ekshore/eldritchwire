@@ -1,4 +1,4 @@
-use crate::{FixedPointDecimal, Operation, error::EldritchError};
+use crate::{error::EldritchError, FixedPointDecimal, Operation};
 use eldritchwire_macros::CommandGroup;
 
 use super::CommandData;
@@ -6,34 +6,49 @@ use super::CommandData;
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum LensCommand {
     #[command(parameter(0x00), data_type(128), bounds(lower(0.0), upper(1.0)))]
-    Focus(Operation, FixedPointDecimal),
+    Focus {
+        operation: Operation,
+        data: FixedPointDecimal,
+    },
 
     #[command(parameter(0x01))]
     InstantaneousAutoFocus,
 
     #[command(parameter(0x02), data_type(128), bounds(lower(-1.0), upper(16.0)))]
-    ApatureFStop(Operation, FixedPointDecimal),
+    ApatureFStop {
+        operation: Operation,
+        data: FixedPointDecimal,
+    },
 
     #[command(parameter(0x03), data_type(128), bounds(lower(0.0), upper(1.0)))]
-    ApatureNormalized(Operation, FixedPointDecimal),
+    ApatureNormalized {
+        operation: Operation,
+        data: FixedPointDecimal,
+    },
 
     #[command(parameter(0x04), data_type(2), bounds(lower(0)))]
-    ApatureOrdinal(Operation, i16),
+    ApatureOrdinal { operation: Operation, data: i16 },
 
     #[command(parameter(0x05))]
     InstantaneousAutoApature,
 
     #[command(parameter(0x06), data_type(0))]
-    OpticalImageStabalization(Operation, bool),
+    OpticalImageStabalization { operation: Operation, data: bool },
 
     #[command(parameter(0x07), data_type(2), bounds(lower(0)))]
-    AbsoluteZoomMM(Operation, i16),
+    AbsoluteZoomMM { operation: Operation, data: i16 },
 
     #[command(parameter(0x08), data_type(128), bounds(lower(0.0), upper(1.0)))]
-    AbsoluteZoomNormalized(Operation, FixedPointDecimal),
+    AbsoluteZoomNormalized {
+        operation: Operation,
+        data: FixedPointDecimal,
+    },
 
     #[command(parameter(0x09), data_type(128), bounds(lower(-1.0), upper(1.0)))]
-    AbsoluteZoomContinuous(Operation, FixedPointDecimal),
+    AbsoluteZoomContinuous {
+        operation: Operation,
+        data: FixedPointDecimal,
+    },
 }
 
 #[cfg(test)]
@@ -47,12 +62,12 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::Focus(
-                Operation::Assign,
-                FixedPointDecimal {
+            Ok(LensCommand::Focus {
+                operation: Operation::Assign,
+                data: FixedPointDecimal {
                     raw_val: 0x0133u16 as i16,
                 }
-            ))
+            })
         );
     }
 
@@ -63,12 +78,12 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::Focus(
-                Operation::Increment,
-                FixedPointDecimal {
+            Ok(LensCommand::Focus {
+                operation: Operation::Increment,
+                data: FixedPointDecimal {
                     raw_val: 0x0133u16 as i16
                 }
-            ))
+            })
         );
     }
 
@@ -87,12 +102,12 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::ApatureFStop(
-                Operation::Assign,
-                FixedPointDecimal {
+            Ok(LensCommand::ApatureFStop {
+                operation: Operation::Assign,
+                data: FixedPointDecimal {
                     raw_val: 0xfd9au16 as i16
                 }
-            ))
+            })
         );
     }
 
@@ -106,12 +121,12 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::ApatureFStop(
-                Operation::Assign,
-                FixedPointDecimal {
+            Ok(LensCommand::ApatureFStop {
+                operation: Operation::Assign,
+                data: FixedPointDecimal {
                     raw_val: 0x7fffu16 as i16
                 }
-            ))
+            })
         );
     }
 
@@ -122,12 +137,12 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::ApatureNormalized(
-                Operation::Assign,
-                FixedPointDecimal {
+            Ok(LensCommand::ApatureNormalized {
+                operation: Operation::Assign,
+                data: FixedPointDecimal {
                     raw_val: 0x0400u16 as i16
                 }
-            ))
+            })
         );
     }
 
@@ -138,7 +153,10 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::ApatureOrdinal(Operation::Assign, 10_000_i16))
+            Ok(LensCommand::ApatureOrdinal {
+                operation: Operation::Assign,
+                data: 10_000_i16
+            })
         );
     }
 
@@ -165,10 +183,10 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::OpticalImageStabalization(
-                Operation::Assign,
-                true
-            ))
+            Ok(LensCommand::OpticalImageStabalization {
+                operation: Operation::Assign,
+                data: true
+            })
         );
     }
 
@@ -179,10 +197,10 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::OpticalImageStabalization(
-                Operation::Assign,
-                false
-            ))
+            Ok(LensCommand::OpticalImageStabalization {
+                operation: Operation::Assign,
+                data: false
+            })
         );
     }
 
@@ -193,7 +211,10 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::AbsoluteZoomMM(Operation::Assign, 16))
+            Ok(LensCommand::AbsoluteZoomMM {
+                operation: Operation::Assign,
+                data: 16
+            })
         );
     }
 
@@ -204,7 +225,10 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::AbsoluteZoomMM(Operation::Increment, 16))
+            Ok(LensCommand::AbsoluteZoomMM {
+                operation: Operation::Increment,
+                data: 16
+            })
         );
     }
 
@@ -223,12 +247,12 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::AbsoluteZoomNormalized(
-                Operation::Assign,
-                FixedPointDecimal {
+            Ok(LensCommand::AbsoluteZoomNormalized {
+                operation: Operation::Assign,
+                data: FixedPointDecimal {
                     raw_val: 0x00ffu16 as i16
                 }
-            ))
+            })
         );
     }
 
@@ -239,12 +263,12 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::AbsoluteZoomNormalized(
-                Operation::Increment,
-                FixedPointDecimal {
+            Ok(LensCommand::AbsoluteZoomNormalized {
+                operation: Operation::Increment,
+                data: FixedPointDecimal {
                     raw_val: 0x00ffu16 as i16
                 }
-            ))
+            })
         );
     }
 
@@ -263,9 +287,12 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::AbsoluteZoomContinuous(Operation::Assign, FixedPointDecimal {
-                raw_val: 0x00ffu16 as i16
-            }))
+            Ok(LensCommand::AbsoluteZoomContinuous {
+                operation: Operation::Assign,
+                data: FixedPointDecimal {
+                    raw_val: 0x00ffu16 as i16
+                }
+            })
         );
     }
 
@@ -343,7 +370,7 @@ mod lens_commands_tests {
             let command = super::parse_command(command_data);
             assert_eq!(command, Err(EldritchError::DataOutOfBounds));
         }
-        
+
         #[test]
         fn parse_absolute_zoom_normalized_command_below_bounds() {
             // Value -0.1 is below the bound of 0.0
@@ -379,6 +406,5 @@ mod lens_commands_tests {
             let command = super::parse_command(command_data);
             assert_eq!(command, Err(EldritchError::DataOutOfBounds));
         }
-
     }
 }
