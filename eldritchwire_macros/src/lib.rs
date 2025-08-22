@@ -50,192 +50,25 @@ fn build_parse_command_fn(name: &Ident, commands: &Vec<CommandMetaData>) -> Toke
 fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream {
     let command_name = &command.name;
     let data_type = command.data_type;
-    let data = match data_type {
-        Some(0x00) => {
-            return quote! {
-                Ok(#name::#command_name{
-                        operation: if *command_data.operation() == 0 {
-                            Operation::Assign
-                        } else {
-                            return Err(EldritchError::InvalidCommandData);
-                        },
-                        data: command_data.data_buff()[0] != 0,
-                })
-            }
-        }
-        Some(0x01) => quote! { let data = i8::from_le_bytes(data); },
-        Some(0x02) => quote! { let data = i16::from_le_bytes(data); },
-        Some(0x03) => quote! { let data = i32::from_le_bytes(data); },
-        Some(0x04) => quote! { let data = i64::from_le_bytes(data); },
-        Some(0x05) => todo!("String"),
-        Some(0x80) => quote! { let data = FixedPointDecimal::from_data(data); },
-        Some(_) => todo!("Unknown data type"),
-        None => return quote! {},
-    };
+
+    if let Some(0x00) = data_type {
+        return quote! {
+            Ok(#name::#command_name{
+                operation: if *command_data.operation() == 0 {
+                    Operation::Assign
+                } else {
+                    return Err(EldritchError::InvalidCommandData);
+                },
+                data: command_data.data_buff()[0] != 0,
+            })
+        };
+    }
+
+    let data = build_data_parser(&data_type);
 
     #[cfg(feature = "bounds-checked")]
     let bounds_check = if let Some(bounds) = &command.bounds {
-        match data_type {
-            Some(0x00) => todo!("Bounds, not supported on Bool"),
-            Some(0x01) => {
-                let lower = if let Some(lower) = &bounds.lower {
-                    if let syn::Lit::Int(constraint) = lower {
-                        constraint
-                            .base10_parse::<i8>()
-                            .expect("Should be a valid i8")
-                    } else {
-                        panic!("Inalid state");
-                    }
-                } else {
-                    i8::MIN
-                };
-
-                let upper = if let Some(upper) = &bounds.upper {
-                    if let syn::Lit::Int(constraint) = upper {
-                        constraint
-                            .base10_parse::<i8>()
-                            .expect("Should be a valid i8")
-                    } else {
-                        panic!("Invalid state");
-                    }
-                } else {
-                    i8::MAX
-                };
-
-                quote! {
-                    if !(#lower..=#upper).contains(&data) {
-                        Err(EldritchError::DataOutOfBounds)
-                    } else
-                }
-            }
-            Some(0x02) => {
-                let lower = if let Some(lower) = &bounds.lower {
-                    if let syn::Lit::Int(constraint) = lower {
-                        constraint
-                            .base10_parse::<i16>()
-                            .expect("Should be a valid i16")
-                    } else {
-                        panic!("Inalid state");
-                    }
-                } else {
-                    i16::MIN
-                };
-
-                let upper = if let Some(upper) = &bounds.upper {
-                    if let syn::Lit::Int(constraint) = upper {
-                        constraint
-                            .base10_parse::<i16>()
-                            .expect("Should be a valid i16")
-                    } else {
-                        panic!("Invalid state");
-                    }
-                } else {
-                    i16::MAX
-                };
-
-                quote! {
-                    if !(#lower..=#upper).contains(&data) {
-                        Err(EldritchError::DataOutOfBounds)
-                    } else
-                }
-            }
-            Some(0x03) => {
-                let lower = if let Some(lower) = &bounds.lower {
-                    if let syn::Lit::Int(constraint) = lower {
-                        constraint
-                            .base10_parse::<i32>()
-                            .expect("Should be a valid i32")
-                    } else {
-                        panic!("Inalid state");
-                    }
-                } else {
-                    i32::MIN
-                };
-
-                let upper = if let Some(upper) = &bounds.upper {
-                    if let syn::Lit::Int(constraint) = upper {
-                        constraint
-                            .base10_parse::<i32>()
-                            .expect("Should be a valid i32")
-                    } else {
-                        panic!("Invalid state");
-                    }
-                } else {
-                    i32::MAX
-                };
-
-                quote! {
-                    if !(#lower..=#upper).contains(&data) {
-                        Err(EldritchError::DataOutOfBounds)
-                    } else
-                }
-            }
-            Some(0x04) => {
-                let lower = if let Some(lower) = &bounds.lower {
-                    if let syn::Lit::Int(constraint) = lower {
-                        constraint
-                            .base10_parse::<i64>()
-                            .expect("Should be a valid i64")
-                    } else {
-                        panic!("Inalid state");
-                    }
-                } else {
-                    i64::MIN
-                };
-
-                let upper = if let Some(upper) = &bounds.upper {
-                    if let syn::Lit::Int(constraint) = upper {
-                        constraint
-                            .base10_parse::<i64>()
-                            .expect("Should be a valid i64")
-                    } else {
-                        panic!("Invalid state");
-                    }
-                } else {
-                    i64::MAX
-                };
-
-                quote! {
-                    if !(#lower..=#upper).contains(&data) {
-                        Err(EldritchError::DataOutOfBounds)
-                    } else
-                }
-            }
-            Some(0x05) => todo!("String"),
-            Some(0x80) => {
-                let lower = if let Some(lower) = &bounds.lower {
-                    if let syn::Lit::Float(constraint) = lower {
-                        constraint
-                            .base10_parse::<f32>()
-                            .expect("Should be a valid f32")
-                    } else {
-                        panic!("Inalid state");
-                    }
-                } else {
-                    -16.0
-                };
-
-                let upper = if let Some(upper) = &bounds.upper {
-                    if let syn::Lit::Float(constraint) = upper {
-                        constraint
-                            .base10_parse::<f32>()
-                            .expect("Should be a valid f32")
-                    } else {
-                        panic!("Invalid state");
-                    }
-                } else {
-                    15.9995
-                };
-
-                quote! {
-                    if !(#lower..=#upper).contains(&data.get_real_val()) {
-                        Err(EldritchError::DataOutOfBounds)
-                    } else
-                }
-            },
-            Some(_) => todo!(),
-            None => return quote! {},
-        }
+        build_bounds_check(data_type, &bounds)
     } else {
         quote! {}
     };
@@ -270,6 +103,184 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
         } else {
             Err(EldritchError::InvalidCommandData)
         }
+    }
+}
+
+fn build_data_parser(data_type: &Option<u8>) -> TokenStream {
+    match *data_type {
+        Some(0x01) => quote! { let data = i8::from_le_bytes(data); },
+        Some(0x02) => quote! { let data = i16::from_le_bytes(data); },
+        Some(0x03) => quote! { let data = i32::from_le_bytes(data); },
+        Some(0x04) => quote! { let data = i64::from_le_bytes(data); },
+        Some(0x05) => todo!("String"),
+        Some(0x80) => quote! { let data = FixedPointDecimal::from_data(data); },
+        Some(_) => todo!("Unknown data type"),
+        None => return quote! {},
+    }
+}
+
+#[cfg(feature = "bounds-checked")]
+fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream {
+    match data_type {
+        Some(0x00) => panic!("Bounds, not supported on Bool"),
+        Some(0x01) => {
+            let lower = if let Some(lower) = &bounds.lower {
+                if let syn::Lit::Int(constraint) = lower {
+                    constraint
+                        .base10_parse::<i8>()
+                        .expect("Should be a valid i8")
+                } else {
+                    panic!("Inalid state");
+                }
+            } else {
+                i8::MIN
+            };
+
+            let upper = if let Some(upper) = &bounds.upper {
+                if let syn::Lit::Int(constraint) = upper {
+                    constraint
+                        .base10_parse::<i8>()
+                        .expect("Should be a valid i8")
+                } else {
+                    panic!("Invalid state");
+                }
+            } else {
+                i8::MAX
+            };
+
+            quote! {
+                if !(#lower..=#upper).contains(&data) {
+                    Err(EldritchError::DataOutOfBounds)
+                } else
+            }
+        }
+        Some(0x02) => {
+            let lower = if let Some(lower) = &bounds.lower {
+                if let syn::Lit::Int(constraint) = lower {
+                    constraint
+                        .base10_parse::<i16>()
+                        .expect("Should be a valid i16")
+                } else {
+                    panic!("Inalid state");
+                }
+            } else {
+                i16::MIN
+            };
+
+            let upper = if let Some(upper) = &bounds.upper {
+                if let syn::Lit::Int(constraint) = upper {
+                    constraint
+                        .base10_parse::<i16>()
+                        .expect("Should be a valid i16")
+                } else {
+                    panic!("Invalid state");
+                }
+            } else {
+                i16::MAX
+            };
+
+            quote! {
+                if !(#lower..=#upper).contains(&data) {
+                    Err(EldritchError::DataOutOfBounds)
+                } else
+            }
+        }
+        Some(0x03) => {
+            let lower = if let Some(lower) = &bounds.lower {
+                if let syn::Lit::Int(constraint) = lower {
+                    constraint
+                        .base10_parse::<i32>()
+                        .expect("Should be a valid i32")
+                } else {
+                    panic!("Inalid state");
+                }
+            } else {
+                i32::MIN
+            };
+
+            let upper = if let Some(upper) = &bounds.upper {
+                if let syn::Lit::Int(constraint) = upper {
+                    constraint
+                        .base10_parse::<i32>()
+                        .expect("Should be a valid i32")
+                } else {
+                    panic!("Invalid state");
+                }
+            } else {
+                i32::MAX
+            };
+
+            quote! {
+                if !(#lower..=#upper).contains(&data) {
+                    Err(EldritchError::DataOutOfBounds)
+                } else
+            }
+        }
+        Some(0x04) => {
+            let lower = if let Some(lower) = &bounds.lower {
+                if let syn::Lit::Int(constraint) = lower {
+                    constraint
+                        .base10_parse::<i64>()
+                        .expect("Should be a valid i64")
+                } else {
+                    panic!("Inalid state");
+                }
+            } else {
+                i64::MIN
+            };
+
+            let upper = if let Some(upper) = &bounds.upper {
+                if let syn::Lit::Int(constraint) = upper {
+                    constraint
+                        .base10_parse::<i64>()
+                        .expect("Should be a valid i64")
+                } else {
+                    panic!("Invalid state");
+                }
+            } else {
+                i64::MAX
+            };
+
+            quote! {
+                if !(#lower..=#upper).contains(&data) {
+                    Err(EldritchError::DataOutOfBounds)
+                } else
+            }
+        }
+        Some(0x05) => todo!("String"),
+        Some(0x80) => {
+            let lower = if let Some(lower) = &bounds.lower {
+                if let syn::Lit::Float(constraint) = lower {
+                    constraint
+                        .base10_parse::<f32>()
+                        .expect("Should be a valid f32")
+                } else {
+                    panic!("Inalid state");
+                }
+            } else {
+                -16.0
+            };
+
+            let upper = if let Some(upper) = &bounds.upper {
+                if let syn::Lit::Float(constraint) = upper {
+                    constraint
+                        .base10_parse::<f32>()
+                        .expect("Should be a valid f32")
+                } else {
+                    panic!("Invalid state");
+                }
+            } else {
+                15.9995
+            };
+
+            quote! {
+                if !(#lower..=#upper).contains(&data.get_real_val()) {
+                    Err(EldritchError::DataOutOfBounds)
+                } else
+            }
+        }
+        Some(_) => panic!("Unsupported Data Type"),
+        None => return quote! {},
     }
 }
 
