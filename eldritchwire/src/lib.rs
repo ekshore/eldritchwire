@@ -14,11 +14,6 @@ impl FixedPointDecimal {
     const MAX: FixedPointDecimal = FixedPointDecimal { raw_val: 0x7fffu16 as i16 };
     const MIN: FixedPointDecimal = FixedPointDecimal { raw_val: 0x8000u16 as i16 };
 
-    // pub fn from_real_val(val: f32) -> Self {
-    //     let raw_val = val * 2_f32.powi(11);
-    //     FixedPointDecimal { raw_val }
-    // }
-
     pub fn get_real_val(&self) -> f32 {
         f32::from(self.raw_val) / 2_f32.powi(11)
     }
@@ -34,16 +29,6 @@ impl FixedPointDecimal {
         }
     }
 }
-
-// impl Limit for FixedPointDecimal {
-//     fn max_val() -> Self {
-//         Self::from_real_val(15.9995)
-//     }
-//
-//     fn min_val() -> Self {
-//         Self::from_real_val(-16_f32)
-//     }
-// }
 
 impl Debug for FixedPointDecimal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

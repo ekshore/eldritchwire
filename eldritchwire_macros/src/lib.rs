@@ -24,6 +24,7 @@ pub fn command_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 fn handle_variant_attr(variant: &syn::Variant) -> Result<CommandMetaData<'_>> {
     let mut parameter = 0;
     let mut data_type = None;
+    let mut data = None;
 
     #[cfg(feature = "bounds-checked")]
     let mut bounds = DataBounds {
@@ -48,6 +49,20 @@ fn handle_variant_attr(variant: &syn::Variant) -> Result<CommandMetaData<'_>> {
                     let lit: syn::LitInt = content.parse()?;
                     let val: u8 = lit.base10_parse()?;
                     data_type = Some(val);
+                }
+
+                if meta.path.is_ident("data") {
+                    let mut elements = vec![];
+                    meta.parse_nested_meta(|inner_meta| {
+                        let ident = inner_meta.path.get_ident();
+                        elements.push(
+                            ident
+                                .expect("There should be elements in data Array")
+                                .clone(),
+                        );
+                        Ok(())
+                    })?;
+                    data = Some(elements);
                 }
 
                 #[cfg(feature = "bounds-checked")]
@@ -76,7 +91,8 @@ fn handle_variant_attr(variant: &syn::Variant) -> Result<CommandMetaData<'_>> {
     let builder = CommandMetaData::builder()
         .name(&variant.ident)
         .parameter(parameter)
-        .data_type(data_type);
+        .data_type(data_type)
+        .data(data);
 
     #[cfg(feature = "bounds-checked")]
     let builder = builder.bounds(bounds);
@@ -125,12 +141,32 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
             })
         };
     }
-
-    let data = build_data_parser(&data_type);
+    let (data_parser, data_size) = match data_type {
+        Some(0x00) => {
+            return quote! {
+                Ok(#name::#command_name{
+                    operation: if *command_data.operation() == 0 {
+                        Operation::Assign
+                    } else {
+                        return Err(EldritchError::InvalidCommandData);
+                    },
+                    data: command_data.data_buff()[0] != 0,
+                })
+            }
+        }
+        Some(0x01) => (quote! { i8::from_le_bytes }, 1),
+        Some(0x02) => (quote! { i16::from_le_bytes }, 2),
+        Some(0x03) => (quote! { i32::from_le_bytes }, 4),
+        Some(0x04) => (quote! { i64::from_le_bytes }, 8),
+        Some(0x05) => todo!("String"),
+        Some(0x80) => (quote! { FixedPointDecimal::from_data }, 2),
+        Some(_) => todo!("Unknown data type"),
+        None => (quote! {}, 0),
+    };
 
     #[cfg(feature = "bounds-checked")]
     let bounds_check = if let Some(bounds) = &command.bounds {
-        build_bounds_check(data_type, &bounds)
+        build_bounds_check(data_type, bounds)
     } else {
         quote! {}
     };
@@ -145,39 +181,55 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
         quote! {}
     };
 
-    quote! {
-        if *command_data.data_type() == #data_type {
+    let data_assignment = quote! {
+        #bounds_check {
+            Ok(#name::#command_name{
+                operation: if *command_data.operation() == 0 {
+                    Operation::Assign
+                } else {
+                    #inc_or_toggle
+                },
+                data
+            })
+        }
+    };
+
+    let data_parser = if let Some(data_map) = &command.data {
+        let data_struct_name = format!("{}Data", command_name);
+        let data_struct_ident = Ident::new(&data_struct_name, proc_macro2::Span::call_site());
+        let data_elements: Vec<_> = data_map
+            .iter()
+            .enumerate()
+            .map(|(idx, ident)| {
+                let s_idx = idx * data_size;
+                let e_idx = s_idx + data_size;
+                quote! { #ident: #data_parser(data[#s_idx..#e_idx].try_into().map_err(|_| EldritchError::InvalidCommandData)?), }
+            })
+            .collect();
+        quote! {
+            let data = command_data.data_buff();
+            let data = #data_struct_ident {
+                #(#data_elements)*
+            };
+            #data_assignment
+        }
+    } else {
+        quote! {
             if let Ok(data) = command_data.data_buff().try_into() {
-                #data
-                #bounds_check {
-                    Ok(#name::#command_name{
-                        operation: if *command_data.operation() == 0 {
-                            Operation::Assign
-                        } else {
-                            #inc_or_toggle
-                        },
-                        data
-                    })
-                }
+                let data = #data_parser(data);
+                #data_assignment
             } else {
                 Err(EldritchError::InvalidCommandData)
             }
+        }
+    };
+
+    quote! {
+        if *command_data.data_type() == #data_type {
+            #data_parser
         } else {
             Err(EldritchError::InvalidCommandData)
         }
-    }
-}
-
-fn build_data_parser(data_type: &Option<u8>) -> TokenStream {
-    match *data_type {
-        Some(0x01) => quote! { let data = i8::from_le_bytes(data); },
-        Some(0x02) => quote! { let data = i16::from_le_bytes(data); },
-        Some(0x03) => quote! { let data = i32::from_le_bytes(data); },
-        Some(0x04) => quote! { let data = i64::from_le_bytes(data); },
-        Some(0x05) => todo!("String"),
-        Some(0x80) => quote! { let data = FixedPointDecimal::from_data(data); },
-        Some(_) => todo!("Unknown data type"),
-        None => return quote! {},
     }
 }
 
@@ -342,7 +394,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
             }
         }
         Some(_) => panic!("Unsupported Data Type"),
-        None => return quote! {},
+        None => quote! {},
     }
 }
 
@@ -358,6 +410,7 @@ struct CommandMetaData<'a> {
     name: &'a Ident,
     parameter: u8,
     data_type: Option<u8>,
+    data: Option<Vec<Ident>>,
     #[cfg(feature = "bounds-checked")]
     bounds: Option<DataBounds>,
 }
@@ -367,6 +420,7 @@ struct CommandMetaDataBuilder<'a> {
     name: Option<&'a Ident>,
     parameter: Option<u8>,
     data_type: Option<u8>,
+    data: Option<Vec<Ident>>,
     #[cfg(feature = "bounds-checked")]
     bounds: Option<DataBounds>,
 }
@@ -393,6 +447,11 @@ impl<'a> CommandMetaDataBuilder<'a> {
         self
     }
 
+    pub fn data(mut self, data: Option<Vec<Ident>>) -> Self {
+        self.data = data;
+        self
+    }
+
     #[cfg(feature = "bounds-checked")]
     pub fn bounds(mut self, bounds: DataBounds) -> Self {
         self.bounds = if bounds.upper.is_some() || bounds.lower.is_some() {
@@ -408,6 +467,7 @@ impl<'a> CommandMetaDataBuilder<'a> {
             name: self.name.expect("name is required"),
             parameter: self.parameter.expect("parameter is required"),
             data_type: self.data_type,
+            data: self.data,
             #[cfg(feature = "bounds-checked")]
             bounds: self.bounds,
         })
@@ -424,7 +484,7 @@ mod macro_tests {
     fn handle_variant_single_attr_test() {
         let input: syn::ItemEnum = parse_quote! {
             enum LensCommands {
-                #[command(parameter(0x00), data_type(128))]
+                #[command(parameter(0x00), data_type(128), data(red, blue))]
                 Focus(Operation, FixedPointDecimal),
             }
         };
@@ -438,6 +498,10 @@ mod macro_tests {
                 name: &Ident::new("Focus", Span::call_site()),
                 parameter: 0,
                 data_type: Some(128),
+                data: Some(vec![
+                    Ident::new("red", Span::call_site()),
+                    Ident::new("blue", Span::call_site())
+                ]),
                 #[cfg(feature = "bounds-checked")]
                 bounds: None,
             }
@@ -462,6 +526,7 @@ mod macro_tests {
                 name: &Ident::new("Focus", Span::call_site()),
                 parameter: 0,
                 data_type: Some(128),
+                data: None,
                 #[cfg(feature = "bounds-checked")]
                 bounds: None,
             }
