@@ -1,14 +1,14 @@
 pub mod lens_commands;
 pub mod video_commands;
-
-use lens_commands::LensCommand;
+pub mod audio_commands;
 
 use crate::error::EldritchError;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
-    Lens(LensCommand),
+    Lens(lens_commands::LensCommand),
     Video(video_commands::VideoCommand),
+    Audio(audio_commands::AudioCommand),
 }
 
 #[derive(Debug, PartialEq)]
@@ -56,6 +56,7 @@ pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
         let command = match cmd_data.category() {
             0x00 => Command::Lens(lens_commands::parse_command(cmd_data)?),
             0x01 => Command::Video(video_commands::parse_command(cmd_data)?),
+            0x02 => Command::Audio(audio_commands::parse_command(cmd_data)?),
             _ => todo!("Command category has either not been implemented or is invalid"),
         };
         Ok(command)
@@ -67,7 +68,7 @@ pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{commands::LensCommand, FixedPointDecimal, Operation};
+    use crate::{FixedPointDecimal, Operation};
 
     #[test]
     fn parse_lens_focus_command() {
@@ -75,7 +76,7 @@ mod test {
         let command = parse_command(&command_data);
         assert_eq!(
             command,
-            Ok(Command::Lens(LensCommand::Focus {
+            Ok(Command::Lens(lens_commands::LensCommand::Focus {
                 operation: Operation::Increment,
                 data: FixedPointDecimal {
                     raw_val: 0x0133u16 as i16
@@ -90,7 +91,7 @@ mod test {
         let cmd = parse_command(&cmd_data);
         assert_eq!(
             cmd,
-            Ok(Command::Lens(LensCommand::OpticalImageStabalization {
+            Ok(Command::Lens(lens_commands::LensCommand::OpticalImageStabalization {
                 operation: Operation::Assign,
                 data: true
             }))
