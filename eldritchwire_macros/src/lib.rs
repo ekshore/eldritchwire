@@ -244,7 +244,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i8>()
                         .expect("Should be a valid i8")
                 } else {
-                    panic!("Inalid state");
+                    panic!("Invalid state");
                 }
             } else {
                 i8::MIN
@@ -275,7 +275,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i16>()
                         .expect("Should be a valid i16")
                 } else {
-                    panic!("Inalid state");
+                    panic!("Invalid state");
                 }
             } else {
                 i16::MIN
@@ -306,7 +306,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i32>()
                         .expect("Should be a valid i32")
                 } else {
-                    panic!("Inalid state");
+                    panic!("Invalid state");
                 }
             } else {
                 i32::MIN
@@ -337,7 +337,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i64>()
                         .expect("Should be a valid i64")
                 } else {
-                    panic!("Inalid state");
+                    panic!("Invalid state");
                 }
             } else {
                 i64::MIN
@@ -369,7 +369,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<f32>()
                         .expect("Should be a valid f32")
                 } else {
-                    panic!("Inalid state");
+                    panic!("Invalid state");
                 }
             } else {
                 -16.0
