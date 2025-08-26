@@ -1,4 +1,5 @@
 pub mod lens_commands;
+pub mod video_commands;
 
 use lens_commands::LensCommand;
 
@@ -7,6 +8,7 @@ use crate::error::EldritchError;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     Lens(LensCommand),
+    Video(video_commands::VideoCommand),
 }
 
 #[derive(Debug, PartialEq)]
@@ -53,6 +55,7 @@ pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
     if let Ok(cmd_data) = CommandData::new(cmd_buffer) {
         let command = match cmd_data.category() {
             0x00 => Command::Lens(lens_commands::parse_command(cmd_data)?),
+            0x01 => Command::Video(video_commands::parse_command(cmd_data)?),
             _ => todo!("Command category has either not been implemented or is invalid"),
         };
         Ok(command)
@@ -64,7 +67,7 @@ pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{FixedPointDecimal, Operation, commands::LensCommand};
+    use crate::{commands::LensCommand, FixedPointDecimal, Operation};
 
     #[test]
     fn parse_lens_focus_command() {
@@ -72,7 +75,7 @@ mod test {
         let command = parse_command(&command_data);
         assert_eq!(
             command,
-            Ok(Command::Lens(LensCommand::Focus{
+            Ok(Command::Lens(LensCommand::Focus {
                 operation: Operation::Increment,
                 data: FixedPointDecimal {
                     raw_val: 0x0133u16 as i16
@@ -87,12 +90,31 @@ mod test {
         let cmd = parse_command(&cmd_data);
         assert_eq!(
             cmd,
-            Ok(Command::Lens(LensCommand::OpticalImageStabalization{
+            Ok(Command::Lens(LensCommand::OpticalImageStabalization {
                 operation: Operation::Assign,
                 data: true
             }))
         );
-   }
+    }
+
+    #[test]
+    fn parse_video_mode_command() {
+        let cmd_data = [0x01, 0x00, 0x01, 0x00, 0x18, 0x01, 0x03, 0x00, 0x00];
+        let cmd = parse_command(&cmd_data);
+        assert_eq!(
+            cmd,
+            Ok(Command::Video(video_commands::VideoCommand::VideoMode {
+                operation: Operation::Assign,
+                data: video_commands::VideoModeData {
+                    frame_rate: 24,
+                    m_rate: 1,
+                    dimensions: 3,
+                    interlaced: 0,
+                    color_space: 0,
+                }
+            },))
+        );
+    }
 
     #[test]
     fn parse_command_data_success() {
@@ -114,12 +136,12 @@ mod test {
     fn parse_command_data_success_longer_data() {
         let cmd_data: [u8; 6] = [0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd];
         if let Ok(cmd_data) = CommandData::new(&cmd_data) {
-        assert_eq!(
-            cmd_data,
-            CommandData {
-                bytes: &[0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd],
-            }
-        );
+            assert_eq!(
+                cmd_data,
+                CommandData {
+                    bytes: &[0x00, 0x00, 0x80, 0x01, 0x9a, 0xfd],
+                }
+            );
         } else {
             panic!();
         }
