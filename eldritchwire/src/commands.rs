@@ -2,6 +2,7 @@ pub mod lens_commands;
 pub mod video_commands;
 pub mod audio_commands;
 pub mod output_commands;
+pub mod display_commands;
 
 use crate::error::EldritchError;
 
@@ -11,6 +12,7 @@ pub enum Command {
     Video(video_commands::VideoCommand),
     Audio(audio_commands::AudioCommand),
     Output(output_commands::OutputCommand),
+    Display(display_commands::DisplayCommand),
 }
 
 #[derive(Debug, PartialEq)]
@@ -60,6 +62,7 @@ pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
             0x01 => Command::Video(video_commands::parse_command(cmd_data)?),
             0x02 => Command::Audio(audio_commands::parse_command(cmd_data)?),
             0x03 => Command::Output(output_commands::parse_command(cmd_data)?),
+            0x04 => Command::Display(display_commands::parse_command(cmd_data)?),
             _ => todo!("Command category has either not been implemented or is invalid"),
         };
         Ok(command)
