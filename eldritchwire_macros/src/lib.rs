@@ -244,7 +244,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i8>()
                         .expect("Should be a valid i8")
                 } else {
-                    panic!("Invalid state");
+                    panic!("Lower bound should be valid i8");
                 }
             } else {
                 i8::MIN
@@ -256,7 +256,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i8>()
                         .expect("Should be a valid i8")
                 } else {
-                    panic!("Invalid state");
+                    panic!("Upper bound should be valid i8");
                 }
             } else {
                 i8::MAX
@@ -275,7 +275,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i16>()
                         .expect("Should be a valid i16")
                 } else {
-                    panic!("Invalid state");
+                    panic!("Lower bound should be valid i16");
                 }
             } else {
                 i16::MIN
@@ -287,7 +287,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i16>()
                         .expect("Should be a valid i16")
                 } else {
-                    panic!("Invalid state");
+                    panic!("Upper bound should be valid i16");
                 }
             } else {
                 i16::MAX
@@ -306,7 +306,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i32>()
                         .expect("Should be a valid i32")
                 } else {
-                    panic!("Invalid state");
+                    panic!("Lower bound should be valid i32");
                 }
             } else {
                 i32::MIN
@@ -318,7 +318,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i32>()
                         .expect("Should be a valid i32")
                 } else {
-                    panic!("Invalid state");
+                    panic!("Upper bound should be valid i32");
                 }
             } else {
                 i32::MAX
@@ -337,7 +337,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i64>()
                         .expect("Should be a valid i64")
                 } else {
-                    panic!("Invalid state");
+                    panic!("Lower bound should be valid i64");
                 }
             } else {
                 i64::MIN
@@ -349,7 +349,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<i64>()
                         .expect("Should be a valid i64")
                 } else {
-                    panic!("Invalid state");
+                    panic!("Upper bound should be valid i64");
                 }
             } else {
                 i64::MAX
@@ -369,7 +369,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<f32>()
                         .expect("Should be a valid f32")
                 } else {
-                    panic!("Invalid state");
+                    panic!("Lower bound be a valid f32");
                 }
             } else {
                 -16.0
@@ -381,7 +381,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                         .base10_parse::<f32>()
                         .expect("Should be a valid f32")
                 } else {
-                    panic!("Invalid state");
+                    panic!("Upper bound should be a valid f32");
                 }
             } else {
                 15.9995
