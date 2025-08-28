@@ -3,6 +3,8 @@ pub mod video_commands;
 pub mod audio_commands;
 pub mod output_commands;
 pub mod display_commands;
+pub mod tally_commands;
+pub mod reference_commands;
 
 use crate::error::EldritchError;
 
@@ -13,6 +15,8 @@ pub enum Command {
     Audio(audio_commands::AudioCommand),
     Output(output_commands::OutputCommand),
     Display(display_commands::DisplayCommand),
+    Tally(tally_commands::TallyCommand),
+    Reference(reference_commands::ReferenceCommand),
 }
 
 #[derive(Debug, PartialEq)]
@@ -63,6 +67,8 @@ pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
             0x02 => Command::Audio(audio_commands::parse_command(cmd_data)?),
             0x03 => Command::Output(output_commands::parse_command(cmd_data)?),
             0x04 => Command::Display(display_commands::parse_command(cmd_data)?),
+            0x05 => Command::Tally(tally_commands::parse_command(cmd_data)?),
+            0x06 => Command::Reference(reference_commands::parse_command(cmd_data)?),
             _ => todo!("Command category has either not been implemented or is invalid"),
         };
         Ok(command)
