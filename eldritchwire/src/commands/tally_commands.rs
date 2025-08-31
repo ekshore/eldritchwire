@@ -1,6 +1,7 @@
 use crate::{EldritchError, FixedPointDecimal, Operation, commands::CommandData};
 use eldritchwire_macros::CommandGroup;
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum TallyCommand {
     #[command(parameter(0x00), data_type(128), bounds(lower(0.0), upper(1.0)))]
