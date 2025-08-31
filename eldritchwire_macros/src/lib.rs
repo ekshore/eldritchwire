@@ -158,7 +158,20 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
         Some(0x02) => (quote! { i16::from_le_bytes }, 2),
         Some(0x03) => (quote! { i32::from_le_bytes }, 4),
         Some(0x04) => (quote! { i64::from_le_bytes }, 8),
-        Some(0x05) => todo!("String"),
+        Some(0x05) => {
+            return quote! {
+                Ok(#name::#command_name {
+                    operation: if *command_data.operation() == 0 {
+                        Operation::Assign
+                    } else {
+                        return Err(EldritchError::InvalidCommandData);
+                    },
+                    data: String::from_utf8(command_data.data_buff().try_into()
+                              .map_err(|_| EldritchError::InvalidCommandData)?)
+                        .map_err(|_| EldritchError::InvalidCommandData)?
+                })
+            }
+        }
         Some(0x80) => (quote! { FixedPointDecimal::from_data }, 2),
         Some(_) => todo!("Unknown data type"),
         None => (quote! {}, 0),
@@ -204,7 +217,7 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
                 let s_idx = idx * data_size;
                 let e_idx = s_idx + data_size;
                 quote! { #ident: #data_parser(data[#s_idx..#e_idx].try_into().map_err(|_| EldritchError::InvalidCommandData)?), }
-            })
+        })
             .collect();
         quote! {
             let data = command_data.data_buff();
@@ -361,7 +374,7 @@ fn build_bounds_check(data_type: Option<u8>, bounds: &DataBounds) -> TokenStream
                 } else
             }
         }
-        Some(0x05) => todo!("String"),
+        Some(0x05) => panic!("String does not support bounds Checking"),
         Some(0x80) => {
             let lower = if let Some(lower) = &bounds.lower {
                 if let syn::Lit::Float(constraint) = lower {
