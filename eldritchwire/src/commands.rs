@@ -5,6 +5,7 @@ pub mod output_commands;
 pub mod display_commands;
 pub mod tally_commands;
 pub mod reference_commands;
+pub mod configuration_commands;
 
 use crate::error::EldritchError;
 
@@ -17,6 +18,7 @@ pub enum Command {
     Display(display_commands::DisplayCommand),
     Tally(tally_commands::TallyCommand),
     Reference(reference_commands::ReferenceCommand),
+    Configuration(configuration_commands::ConfigurationCommand),
 }
 
 #[derive(Debug, PartialEq)]
@@ -69,6 +71,7 @@ pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
             0x04 => Command::Display(display_commands::parse_command(cmd_data)?),
             0x05 => Command::Tally(tally_commands::parse_command(cmd_data)?),
             0x06 => Command::Reference(reference_commands::parse_command(cmd_data)?),
+            0x07 => Command::Configuration(configuration_commands::parse_command(cmd_data)?),
             _ => todo!("Command category has either not been implemented or is invalid"),
         };
         Ok(command)
