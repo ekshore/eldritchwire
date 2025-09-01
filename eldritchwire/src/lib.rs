@@ -9,10 +9,7 @@ pub struct FixedPointDecimal {
     raw_val: i16,
 }
 
-#[allow(dead_code)]
 impl FixedPointDecimal {
-    const MAX: FixedPointDecimal = FixedPointDecimal { raw_val: 0x7fffu16 as i16 };
-    const MIN: FixedPointDecimal = FixedPointDecimal { raw_val: 0x8000u16 as i16 };
 
     pub fn get_real_val(&self) -> f32 {
         f32::from(self.raw_val) / 2_f32.powi(11)
@@ -210,16 +207,6 @@ mod fixed_point_test {
         };
         let float_value = minus_point_three.get_rounded_val();
         assert_eq!(float_value, -0.3_f32);
-    }
-
-    #[test]
-    fn fpd_max() {
-        assert_eq!(15.999512_f32, FixedPointDecimal::MAX.get_real_val());
-    }
-
-    #[test]
-    fn fdp_min() {
-        assert_eq!(-16.0_f32, FixedPointDecimal::MIN.get_real_val());
     }
 }
 

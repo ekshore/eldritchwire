@@ -1,4 +1,4 @@
-use crate::{EldritchError, FixedPointDecimal, Operation, commands::CommandData};
+use crate::{commands::CommandData, EldritchError, FixedPointDecimal, Operation};
 use eldritchwire_macros::CommandGroup;
 
 #[allow(clippy::enum_variant_names)]

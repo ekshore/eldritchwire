@@ -5,7 +5,7 @@ pub enum EldritchError {
     DataOutOfBounds,
     EndOfPacket,
     InvalidCommandData,
-    InvalidDataType{ expected: String, command: String },
+    InvalidDataType { expected: String, command: String },
     InvalidHeader,
     PacketToLarge,
     PaddingViolation(String),
