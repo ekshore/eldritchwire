@@ -21,7 +21,7 @@
 use eldritchwire::parse_packet;
 
 let raw_data: &[u8] = /* your SDI data buffer here */;
-let commands = parse_packet(raw_data)?;
+let commands = parse_frame_packet(raw_data)?;
 
 for cmd in commands {
     println!("{:?}", cmd);

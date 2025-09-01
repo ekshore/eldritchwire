@@ -135,7 +135,7 @@ impl PacketData {
     }
 }
 
-pub fn parse_packet(data: Vec<u8>) -> Result<Vec<Command>, EldritchError> {
+pub fn parse_frame_packet(data: Vec<u8>) -> Result<Vec<Command>, EldritchError> {
     let mut packet = PacketData::new(data)?;
     let mut commands: Vec<Command> = Vec::new();
 
@@ -356,7 +356,7 @@ mod lib_test {
             0x00, 0x00, // Padding
         ];
 
-        if let Ok(commands) = parse_packet(packet_data) {
+        if let Ok(commands) = parse_frame_packet(packet_data) {
             println!("parse_packet_single_command() commands: {:?}", commands);
             assert_eq!(1, commands.len());
             assert_eq!(
@@ -384,7 +384,7 @@ mod lib_test {
             0x00, 0x00, // Padding
         ];
 
-        if let Ok(commands) = parse_packet(packet_data) {
+        if let Ok(commands) = parse_frame_packet(packet_data) {
             println!("parse_packet_single_command() commands: {:?}", commands);
             assert_eq!(2, commands.len());
             assert_eq!(
