@@ -1,4 +1,4 @@
-use crate::{EldritchError, FixedPointDecimal, Operation, commands::CommandData};
+use crate::{commands::CommandData, EldritchError, FixedPointDecimal, Operation};
 use eldritchwire_macros::CommandGroup;
 
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
@@ -12,17 +12,17 @@ pub enum PtzControlCommand {
     MemoryPreset {
         operation: Operation,
         data: MemoryPresetData,
-    }
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PanTiltVelocityData {
-    pan_velocity: FixedPointDecimal,
-    tilt_velocity: FixedPointDecimal,
+    pub pan_velocity: FixedPointDecimal,
+    pub tilt_velocity: FixedPointDecimal,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MemoryPresetData {
-    preset_command: i8,
-    preset_slot: i8,
+    pub preset_command: i8,
+    pub preset_slot: i8,
 }

@@ -32,10 +32,7 @@ pub enum AudioCommand {
         data: InputLevelsData,
     },
     #[command(parameter(0x06), data_type(0))]
-    PhantomPower {
-        operation: Operation,
-        data: bool
-    }
+    PhantomPower { operation: Operation, data: bool },
 }
 
 #[derive(Clone, Debug, PartialEq)]
