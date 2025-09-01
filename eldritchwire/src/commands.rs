@@ -8,6 +8,7 @@ pub mod reference_commands;
 pub mod configuration_commands;
 pub mod color_correction_commands;
 pub mod media_commands;
+pub mod ptz_control_commands;
 
 use crate::error::EldritchError;
 
@@ -23,6 +24,7 @@ pub enum Command {
     Configuration(configuration_commands::ConfigurationCommand),
     ColorCorrection(color_correction_commands::ColorCorrectionCommand),
     Media(media_commands::MediaCommand),
+    PtzControl(ptz_control_commands::PtzControlCommand),
 }
 
 #[derive(Debug, PartialEq)]
@@ -78,6 +80,7 @@ pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
             0x07 => Command::Configuration(configuration_commands::parse_command(cmd_data)?),
             0x08 => Command::ColorCorrection(color_correction_commands::parse_command(cmd_data)?),
             0x0a => Command::Media(media_commands::parse_command(cmd_data)?),
+            0x0b => Command::PtzControl(ptz_control_commands::parse_command(cmd_data)?),
             _ => todo!("Command category has either not been implemented or is invalid"),
         };
         Ok(command)
