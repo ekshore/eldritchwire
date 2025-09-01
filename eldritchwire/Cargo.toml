@@ -3,9 +3,14 @@ name = "eldritchwire"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
+description.workspace = true
+license.workspace = true
+repository.workspace = true
+documentation.workspace = true
+readme = "../README.md"
 
 [dependencies]
-eldritchwire_macros = { path = "../eldritchwire_macros" }
+eldritchwire_macros = { version = "0.1.0", path = "../eldritchwire_macros" }
 
 [features]
 "default" = ["bounds-checked"]

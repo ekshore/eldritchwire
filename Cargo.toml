@@ -10,3 +10,7 @@ members = [
 version = "0.1.0"
 edition = "2021"
 authors = ["Caleb Ekstrand <ekstrand.caleb@ekshore.net>"]
+description = "A Rust crate for working with the Black Magic Design SDI camera control protocol."
+license = "MIT"
+repository = "https://github.com/ekshore/eldritchwire"
+documentation = "https://docs.rs/eldritchwire"

@@ -1,0 +1,14 @@
+pre-release-hook = [
+  "cargo", "test", "--workspace", "--all-features",
+]
+
+pre-release-replacements = [
+  { file = "../CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [{{version}}] - {{date}}" }
+]
+
+pre-release-commit-message = "chore(release): version {{version}}"
+tag-prefix = "v"
+tag-message = "Release {{version}}"
+owners = ["ekstrand.caleb@ekshore.net"]
+sign-commit = false
+sign-tag = false
