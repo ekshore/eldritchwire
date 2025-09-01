@@ -1,14 +1,14 @@
-pub mod lens_commands;
-pub mod video_commands;
 pub mod audio_commands;
-pub mod output_commands;
-pub mod display_commands;
-pub mod tally_commands;
-pub mod reference_commands;
-pub mod configuration_commands;
 pub mod color_correction_commands;
+pub mod configuration_commands;
+pub mod display_commands;
+pub mod lens_commands;
 pub mod media_commands;
+pub mod output_commands;
 pub mod ptz_control_commands;
+pub mod reference_commands;
+pub mod tally_commands;
+pub mod video_commands;
 
 use crate::error::EldritchError;
 
@@ -115,10 +115,40 @@ mod test {
         let cmd = parse_command(&cmd_data);
         assert_eq!(
             cmd,
-            Ok(Command::Lens(lens_commands::LensCommand::OpticalImageStabalization {
+            Ok(Command::Lens(
+                lens_commands::LensCommand::OpticalImageStabalization {
+                    operation: Operation::Assign,
+                    data: true
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn parse_set_exposure_command() {
+        let cmd_data = [0x01, 0x05, 0x03, 0x00, 0x10, 0x27, 0x00, 0x00];
+        let cmd = parse_command(&cmd_data);
+        assert_eq!(
+            cmd,
+            Ok(Command::Video(video_commands::VideoCommand::ExposureUS {
                 operation: Operation::Assign,
-                data: true
+                data: 10000
             }))
+        );
+    }
+
+    #[test]
+    fn parse_add_15_percent_zebra() {
+        let cmd_data = [0x04, 0x02, 0x80, 0x01, 0x33, 0x01];
+        let cmd = parse_command(&cmd_data);
+        assert_eq!(
+            cmd,
+            Ok(Command::Display(
+                display_commands::DisplayCommand::ZebraLevel {
+                    operation: Operation::Increment,
+                    data: FixedPointDecimal::from_data(&[0x33, 0x01])
+                }
+            ))
         );
     }
 
@@ -138,6 +168,32 @@ mod test {
                     color_space: 0,
                 }
             },))
+        );
+    }
+
+    #[test]
+    fn parse_subtract_gamma() {
+        let cmd_data = [
+            0x08, 0x01, 0x80, 0x01, 0x00, 0x00, 0x9a, 0xfd, 0x9a, 0xfd, 0x00, 0x00,
+        ];
+        let cmd = parse_command(&cmd_data);
+        assert_eq!(
+            cmd,
+            Ok(Command::ColorCorrection(
+                color_correction_commands::ColorCorrectionCommand::GammaAdjust {
+                    operation: Operation::Increment,
+                    data: color_correction_commands::RedGreenBlueLuma {
+                        red: FixedPointDecimal { raw_val: 0x00 },
+                        green: FixedPointDecimal {
+                            raw_val: 0xfd9au16 as i16
+                        },
+                        blue: FixedPointDecimal {
+                            raw_val: 0xfd9au16 as i16
+                        },
+                        luma: FixedPointDecimal { raw_val: 0x00 },
+                    }
+                }
+            ))
         );
     }
 

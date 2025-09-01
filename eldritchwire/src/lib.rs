@@ -4,13 +4,18 @@ use commands::Command;
 use error::EldritchError;
 use std::fmt::Debug;
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct AddressedCommand {
+    device_id: u8,
+    command: Command,
+}
+
 #[derive(Clone, PartialEq, PartialOrd)]
 pub struct FixedPointDecimal {
     raw_val: i16,
 }
 
 impl FixedPointDecimal {
-
     pub fn get_real_val(&self) -> f32 {
         f32::from(self.raw_val) / 2_f32.powi(11)
     }
@@ -64,17 +69,17 @@ pub enum Operation {
     Toggle,
 }
 
-#[derive(Debug, PartialEq)]
-struct PacketData {
-    data: Vec<u8>,
-    cursor: u8,
-}
-
 #[derive(Clone, Debug, PartialEq)]
 struct CommandHeader {
     device_id: u8,
     command_length: u8,
     command_id: u8,
+}
+
+#[derive(Debug, PartialEq)]
+struct PacketData {
+    data: Vec<u8>,
+    cursor: u8,
 }
 
 impl PacketData {
@@ -127,6 +132,12 @@ impl PacketData {
     fn get_slice(&mut self, slice_len: u8) -> Result<&[u8], EldritchError> {
         let new_cur = self.cursor + slice_len;
         if usize::from(new_cur) > self.data.len() {
+            println!(
+                "Number of bytes in packet: {}, new cursor: {}, slice length: {}",
+                self.data.len(),
+                new_cur,
+                slice_len
+            );
             return Err(EldritchError::EndOfPacket);
         }
         let slice_data = &self.data[usize::from(self.cursor)..usize::from(new_cur)];
@@ -135,15 +146,18 @@ impl PacketData {
     }
 }
 
-pub fn parse_frame_packet(data: Vec<u8>) -> Result<Vec<Command>, EldritchError> {
+pub fn parse_frame_packet(data: Vec<u8>) -> Result<Vec<AddressedCommand>, EldritchError> {
     let mut packet = PacketData::new(data)?;
-    let mut commands: Vec<Command> = Vec::new();
+    let mut commands: Vec<AddressedCommand> = Vec::new();
 
     while packet.has_data() {
         let header = packet.parse_header()?;
 
         let command_data = packet.get_slice(header.command_length)?;
-        commands.push(commands::parse_command(command_data)?);
+        commands.push(AddressedCommand {
+            device_id: header.device_id,
+            command: commands::parse_command(command_data)?,
+        });
 
         let padding = packet.get_slice(calculate_padding_length(header.command_length))?;
         verify_padding(padding, header.command_length)?;
@@ -212,6 +226,13 @@ mod fixed_point_test {
 
 #[cfg(test)]
 mod packet_data_test {
+    use crate::commands::{
+        color_correction_commands::{ColorCorrectionCommand, RedGreenBlueLuma},
+        display_commands::DisplayCommand,
+        lens_commands::LensCommand,
+        video_commands::{VideoCommand, VideoModeData},
+    };
+
     use super::*;
 
     #[test]
@@ -341,6 +362,106 @@ mod packet_data_test {
             panic!();
         }
     }
+
+    #[test]
+    fn parse_large_packet() {
+        let frame_packet = vec![
+            0x04, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xff, 0x05, 0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x04, 0x08, 0x00, 0x00, 0x01, 0x05, 0x03, 0x00,
+            0x10, 0x27, 0x00, 0x00, 0x04, 0x06, 0x00, 0x00, 0x04, 0x02, 0x80, 0x01, 0x33, 0x01,
+            0x00, 0x00, 0xff, 0x09, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x18, 0x01, 0x03, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x04, 0x0c, 0x00, 0x00, 0x08, 0x01, 0x80, 0x01, 0x00, 0x00,
+            0x9a, 0xfd, 0x9a, 0xfd, 0x00, 0x00,
+        ];
+        let commands = parse_frame_packet(frame_packet).expect("Test Frame should parse");
+        let mut commands = commands.iter();
+
+        assert_eq!(
+            commands.next(),
+            Some(AddressedCommand {
+                device_id: 4,
+                command: Command::Lens(LensCommand::InstantaneousAutoFocus),
+            })
+            .as_ref()
+        );
+
+        assert_eq!(
+            commands.next(),
+            Some(AddressedCommand {
+                device_id: 255,
+                command: Command::Lens(LensCommand::OpticalImageStabalization {
+                    operation: Operation::Assign,
+                    data: true
+                })
+            })
+            .as_ref()
+        );
+
+        assert_eq!(
+            commands.next(),
+            Some(AddressedCommand {
+                device_id: 4,
+                command: Command::Video(VideoCommand::ExposureUS {
+                    operation: Operation::Assign,
+                    data: 10000
+                })
+            })
+            .as_ref()
+        );
+
+        assert_eq!(
+            commands.next(),
+            Some(AddressedCommand {
+                device_id: 4,
+                command: Command::Display(DisplayCommand::ZebraLevel {
+                    operation: Operation::Increment,
+                    data: FixedPointDecimal {
+                        raw_val: 0x0133u16 as i16
+                    }
+                })
+            })
+            .as_ref()
+        );
+
+        assert_eq!(
+            commands.next(),
+            Some(AddressedCommand {
+                device_id: 255,
+                command: Command::Video(VideoCommand::VideoMode {
+                    operation: Operation::Assign,
+                    data: VideoModeData {
+                        frame_rate: 24,
+                        m_rate: 1,
+                        dimensions: 3,
+                        interlaced: 0,
+                        color_space: 0,
+                    }
+                })
+            })
+            .as_ref()
+        );
+
+        assert_eq!(
+            commands.next(),
+            Some(AddressedCommand {
+                device_id: 4,
+                command: Command::ColorCorrection(ColorCorrectionCommand::GammaAdjust {
+                    operation: Operation::Increment,
+                    data: RedGreenBlueLuma {
+                        red: FixedPointDecimal { raw_val: 0x00 },
+                        green: FixedPointDecimal {
+                            raw_val: 0xfd9au16 as i16
+                        },
+                        blue: FixedPointDecimal {
+                            raw_val: 0xfd9au16 as i16
+                        },
+                        luma: FixedPointDecimal { raw_val: 0x00 },
+                    }
+                })
+            })
+            .as_ref()
+        );
+    }
 }
 
 #[cfg(test)]
@@ -360,12 +481,15 @@ mod lib_test {
             println!("parse_packet_single_command() commands: {:?}", commands);
             assert_eq!(1, commands.len());
             assert_eq!(
-                Command::Lens(LensCommand::Focus{
-                    operation: Operation::Increment,
-                    data: FixedPointDecimal {
-                        raw_val: 0x0133u16 as i16
-                    }
-                }),
+                AddressedCommand {
+                    device_id: 0,
+                    command: Command::Lens(LensCommand::Focus {
+                        operation: Operation::Increment,
+                        data: FixedPointDecimal {
+                            raw_val: 0x0133u16 as i16
+                        }
+                    })
+                },
                 *commands.first().expect("Length asserted to be one")
             );
         } else {
@@ -388,23 +512,29 @@ mod lib_test {
             println!("parse_packet_single_command() commands: {:?}", commands);
             assert_eq!(2, commands.len());
             assert_eq!(
-                Command::Lens(LensCommand::Focus{
-                    operation: Operation::Increment,
-                    data: FixedPointDecimal {
-                        raw_val: 0x0133u16 as i16
-                    }
-                }),
+                AddressedCommand {
+                    device_id: 0,
+                    command: Command::Lens(LensCommand::Focus {
+                        operation: Operation::Increment,
+                        data: FixedPointDecimal {
+                            raw_val: 0x0133u16 as i16
+                        }
+                    })
+                },
                 *commands
                     .first()
                     .expect("Length asserted to be more then one")
             );
             assert_eq!(
-                Command::Lens(LensCommand::Focus{
-                    operation: Operation::Increment,
-                    data: FixedPointDecimal {
-                        raw_val: 0x0133u16 as i16
-                    }
-                }),
+                AddressedCommand {
+                    device_id: 0,
+                    command: Command::Lens(LensCommand::Focus {
+                        operation: Operation::Increment,
+                        data: FixedPointDecimal {
+                            raw_val: 0x0133u16 as i16
+                        }
+                    })
+                },
                 *commands.get(1).expect("Length asserted to be two")
             );
         } else {
