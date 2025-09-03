@@ -7,7 +7,7 @@ pre-release-replacements = [
 ]
 
 pre-release-commit-message = "chore(release): version {{version}}"
-tag-prefix = "v"
+tag-name = "v{{version}}"
 tag-message = "Release {{version}}"
 owners = ["ekstrand.caleb@ekshore.net"]
 sign-commit = false
