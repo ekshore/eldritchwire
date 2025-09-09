@@ -1,0 +1,12 @@
+[package]
+name = "eldritch_shield"
+version = "0.1.0"
+edition = "2024"
+authors = ["Caleb Ekstrand <ekstrand.caleb@ekshore.net>"]
+description = "Crate for interfacing with the Blackmagic 3G-SDI Shield for Arduino"
+license = "MIT"
+repository = "https://github.com/ekshore/eldritch_shield"
+documentation = "https://docs.rs/eldritch_shield"
+keywords = ["arduino", "Blackmagic", "bmd", "sdi", "sheild"]
+
+[dependencies]
