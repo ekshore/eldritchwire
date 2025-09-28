@@ -10,3 +10,8 @@ documentation = "https://docs.rs/eldritch_shield"
 keywords = ["arduino", "Blackmagic", "bmd", "sdi", "sheild"]
 
 [dependencies]
+rppal = { version="0.22.1", optional = true }
+
+[features]
+default = [ "rppal" ]
+rppal = ["dep:rppal"]

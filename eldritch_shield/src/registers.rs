@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub struct Register {
     pub address: [u8; 2],
     pub length: usize,
