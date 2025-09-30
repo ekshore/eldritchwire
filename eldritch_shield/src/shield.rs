@@ -20,28 +20,26 @@ where
     }
 
     pub fn get_identity(&mut self) -> Result<String, ShieldError<E>> {
-        let mut buff: [u8; registers::IDENTITY.length] = [0; registers::IDENTITY.length];
+        let mut buff = [0u8; registers::IDENTITY.length];
         self.i2c.read(&registers::IDENTITY.address, &mut buff)?;
         Ok(String::from_utf8(buff.to_vec()).map_err(|_| ShieldError::InvalidResponse)?)
     }
 
     pub fn get_hardware_version(&mut self) -> Result<(u8, u8), ShieldError<E>> {
-        let mut buff: [u8; registers::HARDWARE_VERSION.length] =
-            [0; registers::HARDWARE_VERSION.length];
+        let mut buff = [0u8; registers::HARDWARE_VERSION.length];
         self.i2c.read(&registers::IDENTITY.address, &mut buff)?;
         Ok((buff[0], buff[1]))
     }
 
     pub fn get_firmware_version(&mut self) -> Result<(u8, u8), ShieldError<E>> {
-        let mut buff: [u8; registers::FIRMWARE_VERSION.length] =
-            [0; registers::FIRMWARE_VERSION.length];
+        let mut buff = [0u8; registers::FIRMWARE_VERSION.length];
         self.i2c
             .read(&registers::FIRMWARE_VERSION.address, &mut buff)?;
         Ok((buff[0], buff[1]))
     }
 
     pub fn get_system_control_register(&mut self) -> Result<u8, ShieldError<E>> {
-        let mut buff: [u8; registers::CONTROL.length] = [0; registers::CONTROL.length];
+        let mut buff = [0u8; registers::CONTROL.length];
         self.i2c.read(&registers::CONTROL.address, &mut buff)?;
         Ok(buff[0])
     }
@@ -52,7 +50,7 @@ where
     }
 
     pub fn set_system_control_override(&mut self, enabled: bool) -> Result<(), ShieldError<E>> {
-        let mut buff: [u8; registers::CONTROL.length] = [0; registers::CONTROL.length];
+        let mut buff = [0u8; registers::CONTROL.length];
         self.i2c.read(&registers::CONTROL.address, &mut buff)?;
         buff = if enabled {
             [buff[0] | 0b0000_0001]
@@ -64,7 +62,7 @@ where
     }
 
     pub fn set_system_tally_override(&mut self, enabled: bool) -> Result<(), ShieldError<E>> {
-        let mut buff: [u8; registers::CONTROL.length] = [0; registers::CONTROL.length];
+        let mut buff = [0u8; registers::CONTROL.length];
         self.i2c.read(&registers::CONTROL.address, &mut buff)?;
         buff = if enabled {
             [buff[0] | 0b0000_0010]
@@ -76,7 +74,7 @@ where
     }
 
     pub fn system_reset_tally(&mut self) -> Result<(), ShieldError<E>> {
-        let mut buff: [u8; registers::CONTROL.length] = [0; registers::CONTROL.length];
+        let mut buff = [0u8; registers::CONTROL.length];
         self.i2c.read(&registers::CONTROL.address, &mut buff)?;
         buff = [buff[0] | 0b0000_0100];
         self.i2c.write(&registers::CONTROL.address, &buff)?;
@@ -84,7 +82,7 @@ where
     }
 
     pub fn set_system_output_override(&mut self, enabled: bool) -> Result<(), ShieldError<E>> {
-        let mut buff: [u8; registers::CONTROL.length] = [0; registers::CONTROL.length];
+        let mut buff = [0u8; registers::CONTROL.length];
         self.i2c.read(&registers::CONTROL.address, &mut buff)?;
         buff = if enabled {
             [buff[0] | 0b0000_1000]
@@ -119,14 +117,14 @@ where
     }
 
     pub fn is_incoming_control_armed(&mut self) -> Result<bool, ShieldError<E>> {
-        let buff = [u8; registers::INCOMING_CONTROL_ARM.length];
-        self.i2c.read(&registers::INCOMING_CONTROL_ARM.address, buff)?;
+        let mut buff = [0u8; registers::INCOMING_CONTROL_ARM.length];
+        self.i2c
+            .read(&registers::INCOMING_CONTROL_ARM.address, &mut buff)?;
         Ok(buff[0] > 0)
     }
 
     pub fn get_incoming_control_length(&mut self) -> Result<u8, ShieldError<E>> {
-        let mut buff: [u8; registers::INCOMING_CONTROL_LENGTH.length] =
-            [0; registers::INCOMING_CONTROL_LENGTH.length];
+        let mut buff = [0u8; registers::INCOMING_CONTROL_LENGTH.length];
         self.i2c
             .read(&registers::INCOMING_CONTROL_LENGTH.address, &mut buff)?;
         Ok(buff[0])
@@ -139,14 +137,12 @@ where
             .read(&registers::INCOMING_CONTROL_DATA.address, buff.as_mut())?;
         Ok(buff)
     }
-
 }
 
 use std::alloc;
 use std::slice;
 fn create_buffer(size: u8) -> Result<Box<[u8]>, alloc::LayoutError> {
-    let layout =
-        alloc::Layout::array::<u8>(size.into())?;
+    let layout = alloc::Layout::array::<u8>(size.into())?;
     unsafe {
         let prt = alloc::alloc_zeroed(layout);
         if prt.is_null() {
