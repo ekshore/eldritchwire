@@ -93,5 +93,22 @@ where
         };
         Ok(())
     }
+
+    pub fn output_control_arm(&mut self) -> Result<(), ShieldError<E>> {
+        self.i2c
+            .write(&registers::OUTPUT_CONTROL_ARM.address, &[0x01])?;
+        Ok(())
+    }
+
+    pub fn set_output_control_length(&mut self, length: u8) -> Result<(), ShieldError<E>> {
+        self.i2c
+            .write(&registers::OUTPUT_CONTROL_LENGTH.address, &[length])?;
+        Ok(())
+    }
+
+    pub fn set_output_control_data(&mut self, data: &[u8]) -> Result<(), ShieldError<E>> {
+        self.i2c
+            .write(&registers::OUTPUT_CONTROL_DATA.address, &data)?;
+        Ok(())
     }
 }
