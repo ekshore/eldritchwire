@@ -39,4 +39,59 @@ where
             .read(&registers::FIRMWARE_VERSION.address, &mut buff)?;
         Ok((buff[0], buff[1]))
     }
+
+    pub fn get_system_control_register(&mut self) -> Result<u8, ShieldError<E>> {
+        let mut buff: [u8; registers::CONTROL.length] = [0; registers::CONTROL.length];
+        self.i2c.read(&registers::CONTROL.address, &mut buff)?;
+        Ok(buff[0])
+    }
+
+    pub fn set_system_control_register(&mut self, byte: u8) -> Result<(), ShieldError<E>> {
+        self.i2c.write(&registers::CONTROL.address, &[byte])?;
+        Ok(())
+    }
+
+    pub fn set_system_control_override(&mut self, enabled: bool) -> Result<(), ShieldError<E>> {
+        let mut buff: [u8; registers::CONTROL.length] = [0; registers::CONTROL.length];
+        self.i2c.read(&registers::CONTROL.address, &mut buff)?;
+        buff = if enabled {
+            [buff[0] | 0b0000_0001]
+        } else {
+            [buff[0] & 0b0000_1110]
+        };
+        self.i2c.write(&registers::CONTROL.address, &buff)?;
+        Ok(())
+    }
+
+    pub fn set_system_tally_override(&mut self, enabled: bool) -> Result<(), ShieldError<E>> {
+        let mut buff: [u8; registers::CONTROL.length] = [0; registers::CONTROL.length];
+        self.i2c.read(&registers::CONTROL.address, &mut buff)?;
+        buff = if enabled {
+            [buff[0] | 0b0000_0010]
+        } else {
+            [buff[0] & 0b0000_1101]
+        };
+        self.i2c.write(&registers::CONTROL.address, &buff)?;
+        Ok(())
+    }
+
+    pub fn system_reset_tally(&mut self) -> Result<(), ShieldError<E>> {
+        let mut buff: [u8; registers::CONTROL.length] = [0; registers::CONTROL.length];
+        self.i2c.read(&registers::CONTROL.address, &mut buff)?;
+        buff = [buff[0] | 0b0000_0100];
+        self.i2c.write(&registers::CONTROL.address, &buff)?;
+        Ok(())
+    }
+
+    pub fn set_system_output_override(&mut self, enabled: bool) -> Result<(), ShieldError<E>> {
+        let mut buff: [u8; registers::CONTROL.length] = [0; registers::CONTROL.length];
+        self.i2c.read(&registers::CONTROL.address, &mut buff)?;
+        buff = if enabled {
+            [buff[0] | 0b0000_1000]
+        } else {
+            [buff[0] & 0b0000_0111]
+        };
+        Ok(())
+    }
+    }
 }
