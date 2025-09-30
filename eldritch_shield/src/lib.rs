@@ -1,5 +1,5 @@
-mod registers;
-mod traits;
-mod shield;
-mod errors;
-mod transport_adapters;
+pub mod registers;
+pub mod traits;
+pub mod shield;
+pub mod errors;
+pub mod transport_adapters;

@@ -9,7 +9,7 @@ impl I2cTransport for I2c {
         buff.extend_from_slice(bytes);
         self.write(buff.as_slice())
             .map_err(|err| Self::Error::Transport(err))?;
-        todo!()
+        Ok(())
     }
 
     fn read(&mut self, addr: &[u8; 2], buffer: &mut [u8]) -> Result<(), Self::Error> {
@@ -17,6 +17,6 @@ impl I2cTransport for I2c {
             .map_err(|err| Self::Error::Transport(err))?;
         self.read(buffer)
             .map_err(|err| Self::Error::Transport(err))?;
-        todo!()
+        Ok(())
     }
 }

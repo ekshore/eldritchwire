@@ -19,20 +19,20 @@ where
         Self { i2c, address: 0x6e }
     }
 
-    pub fn get_identity(mut self) -> Result<String, ShieldError<E>> {
+    pub fn get_identity(&mut self) -> Result<String, ShieldError<E>> {
         let mut buff: [u8; registers::IDENTITY.length] = [0; registers::IDENTITY.length];
         self.i2c.read(&registers::IDENTITY.address, &mut buff)?;
         Ok(String::from_utf8(buff.to_vec()).map_err(|_| ShieldError::InvalidResponse)?)
     }
 
-    pub fn get_hardware_version(mut self) -> Result<(u8, u8), ShieldError<E>> {
+    pub fn get_hardware_version(&mut self) -> Result<(u8, u8), ShieldError<E>> {
         let mut buff: [u8; registers::HARDWARE_VERSION.length] =
             [0; registers::HARDWARE_VERSION.length];
         self.i2c.read(&registers::IDENTITY.address, &mut buff)?;
         Ok((buff[0], buff[1]))
     }
 
-    pub fn get_firmware_version(mut self) -> Result<(u8, u8), ShieldError<E>> {
+    pub fn get_firmware_version(&mut self) -> Result<(u8, u8), ShieldError<E>> {
         let mut buff: [u8; registers::FIRMWARE_VERSION.length] =
             [0; registers::FIRMWARE_VERSION.length];
         self.i2c
