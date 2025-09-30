@@ -111,4 +111,48 @@ where
             .write(&registers::OUTPUT_CONTROL_DATA.address, &data)?;
         Ok(())
     }
+
+    pub fn incoming_control_arm(&mut self) -> Result<(), ShieldError<E>> {
+        self.i2c
+            .write(&registers::INCOMING_CONTROL_ARM.address, &[0x01])?;
+        Ok(())
+    }
+
+    pub fn is_incoming_control_armed(&mut self) -> Result<bool, ShieldError<E>> {
+        let buff = [u8; registers::INCOMING_CONTROL_ARM.length];
+        self.i2c.read(&registers::INCOMING_CONTROL_ARM.address, buff)?;
+        Ok(buff[0] > 0)
+    }
+
+    pub fn get_incoming_control_length(&mut self) -> Result<u8, ShieldError<E>> {
+        let mut buff: [u8; registers::INCOMING_CONTROL_LENGTH.length] =
+            [0; registers::INCOMING_CONTROL_LENGTH.length];
+        self.i2c
+            .read(&registers::INCOMING_CONTROL_LENGTH.address, &mut buff)?;
+        Ok(buff[0])
+    }
+
+    pub fn get_incoming_control_data(&mut self) -> Result<Box<[u8]>, ShieldError<E>> {
+        let len = self.get_incoming_control_length()?;
+        let mut buff = create_buffer(len).map_err(|err| ShieldError::MemoryAllocationError(err))?;
+        self.i2c
+            .read(&registers::INCOMING_CONTROL_DATA.address, buff.as_mut())?;
+        Ok(buff)
+    }
+
+}
+
+use std::alloc;
+use std::slice;
+fn create_buffer(size: u8) -> Result<Box<[u8]>, alloc::LayoutError> {
+    let layout =
+        alloc::Layout::array::<u8>(size.into())?;
+    unsafe {
+        let prt = alloc::alloc_zeroed(layout);
+        if prt.is_null() {
+            alloc::handle_alloc_error(layout);
+        }
+        let slice = slice::from_raw_parts_mut(prt, size.into());
+        Ok(Box::from_raw(slice))
+    }
 }
