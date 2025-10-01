@@ -89,6 +89,7 @@ where
         } else {
             [buff[0] & 0b0000_0111]
         };
+        self.i2c.write(&registers::CONTROL.address, &buff)?;
         Ok(())
     }
 
