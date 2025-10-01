@@ -144,6 +144,59 @@ where
             .read(&registers::INCOMING_CONTROL_DATA.address, buff.as_mut())?;
         Ok(buff)
     }
+
+    pub fn output_tally_arm(&mut self) -> Result<(), ShieldError<E>> {
+        self.i2c
+            .write(&registers::OUTPUT_TALLY_ARM.address, &[0x01])?;
+        Ok(())
+    }
+
+    pub fn output_tally_armed(&mut self) -> Result<bool, ShieldError<E>> {
+        let mut buff = [0u8; registers::OUTPUT_TALLY_ARM.length];
+        self.i2c
+            .read(&registers::OUTPUT_TALLY_ARM.address, &mut buff)?;
+        Ok(buff[0] > 0)
+    }
+
+    pub fn set_output_tally_length(&mut self, length: u8) -> Result<(), ShieldError<E>> {
+        self.i2c
+            .write(&registers::OUTPUT_TALLY_LENGTH.address, &[length])?;
+        Ok(())
+    }
+
+    pub fn set_output_tally_data(&mut self, data: &[u8]) -> Result<(), ShieldError<E>> {
+        self.i2c
+            .write(&registers::OUTPUT_TALLY_DATA.address, &data)?;
+        Ok(())
+    }
+
+    pub fn incoming_tally_arm(&mut self) -> Result<(), ShieldError<E>> {
+        self.i2c
+            .write(&registers::INCOMING_TALLY_ARM.address, &[0x01])?;
+        Ok(())
+    }
+
+    pub fn incoming_tally_armed(&mut self) -> Result<bool, ShieldError<E>> {
+        let mut buff = [0u8; registers::INCOMING_TALLY_ARM.length];
+        self.i2c
+            .read(&registers::INCOMING_TALLY_ARM.address, &mut buff)?;
+        Ok(buff[0] > 0)
+    }
+
+    pub fn get_incoming_tally_length(&mut self) -> Result<u8, ShieldError<E>> {
+        let mut buff = [0u8; registers::INCOMING_TALLY_LENGTH.length];
+        self.i2c
+            .read(&registers::INCOMING_TALLY_LENGTH.address, &mut buff)?;
+        Ok(buff[0])
+    }
+
+    pub fn get_incoming_tally_data(&mut self) -> Result<Box<[u8]>, ShieldError<E>> {
+        let len = self.get_incoming_tally_length()?;
+        let mut buff = create_buffer(len).map_err(|err| ShieldError::MemoryAllocationError(err))?;
+        self.i2c
+            .read(&registers::INCOMING_TALLY_DATA.address, &mut buff)?;
+        Ok(buff)
+    }
 }
 
 use std::alloc;
