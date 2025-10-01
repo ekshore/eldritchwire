@@ -98,6 +98,13 @@ where
         Ok(())
     }
 
+    pub fn is_output_control_armed(&mut self) -> Result<bool, ShieldError<E>> {
+        let mut buff = [0; registers::OUTPUT_CONTROL_ARM.length];
+        self.i2c
+            .read(&registers::OUTPUT_CONTROL_ARM.address, &mut buff)?;
+        Ok(buff[0] > 0)
+    }
+
     pub fn set_output_control_length(&mut self, length: u8) -> Result<(), ShieldError<E>> {
         self.i2c
             .write(&registers::OUTPUT_CONTROL_LENGTH.address, &[length])?;
