@@ -2,6 +2,7 @@ use crate::errors::ShieldError;
 use crate::registers;
 use crate::traits::I2cTransport;
 
+#[allow(dead_code)]
 pub struct EldritchShield<I2C> {
     i2c: I2C,
     address: u8,

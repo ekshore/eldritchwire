@@ -13,4 +13,3 @@ impl<E> From<E> for ShieldError<E> {
         ShieldError::Transport(err)
     }
 }
-

@@ -1,11 +1,11 @@
 [package]
 name = "eldritch_shield"
-version = "0.1.0"
-edition = "2024"
-authors = ["Caleb Ekstrand <ekstrand.caleb@ekshore.net>"]
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
 description = "Crate for interfacing with the Blackmagic 3G-SDI Shield for Arduino"
-license = "MIT"
-repository = "https://github.com/ekshore/eldritch_shield"
+license.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/eldritch_shield"
 keywords = ["arduino", "Blackmagic", "bmd", "sdi", "sheild"]
 
@@ -13,5 +13,8 @@ keywords = ["arduino", "Blackmagic", "bmd", "sdi", "sheild"]
 rppal = { version="0.22.1", optional = true }
 
 [features]
-default = [ "rppal" ]
+default = []
 rppal = ["dep:rppal"]
+
+[package.metadata.release]
+pre-release-replacements = []

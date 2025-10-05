@@ -3,6 +3,13 @@
 version = 4
 
 [[package]]
+name = "eldritch_shield"
+version = "0.1.0"
+dependencies = [
+ "rppal",
+]
+
+[[package]]
 name = "eldritchwire"
 version = "0.1.0"
 dependencies = [
@@ -17,6 +24,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "libc"
+version = "0.2.176"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58f929b4d672ea937a23a1ab494143d968337a5f47e56d0815df1e0890ddf174"
 
 [[package]]
 name = "proc-macro2"
@@ -34,6 +47,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1885c039570dc00dcb4ff087a89e185fd56bae234ddc7f056a945bf36467248d"
 dependencies = [
  "proc-macro2",
+]
+
+[[package]]
+name = "rppal"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1ce3b019009cff02cb6b0e96e7cc2e5c5b90187dc1a490f8ef1521d0596b026"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

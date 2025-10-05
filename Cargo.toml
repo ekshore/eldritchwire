@@ -3,7 +3,8 @@ resolver = "2"
 
 members = [
     "eldritchwire",
-    "eldritchwire_macros"
+    "eldritchwire_macros",
+    "eldritch_shield",
 ]
 
 [workspace.package]
