@@ -11,7 +11,7 @@ readme = "../README.md"
 keywords = ["Blackmagic", "sdi", "camera_control", "bdm", "parsing"]
 
 [dependencies]
-eldritchwire_macros = { version = "0.1.0", path = "../eldritchwire_macros" }
+eldritchwire_macros = { version = "0.2.0", path = "../eldritchwire_macros" }
 
 [features]
 "default" = ["bounds-checked"]
