@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'   # trigger on tags like v1.0.0
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   github-release:
     runs-on: ubuntu-latest
