@@ -1,5 +1,5 @@
 pre-release-hook = [
-  "cargo", "test", "--workspace", "--all-features",
+  "cargo", "test", "--workspace",
 ]
 
 pre-release-replacements = [

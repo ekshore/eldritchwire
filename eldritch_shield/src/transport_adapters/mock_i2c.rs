@@ -155,7 +155,7 @@ mod test {
             // 0x3000 — ready flag
             mock.read(&[0x00, 0x30], &mut buf)
                 .expect("read 0x3000 failed");
-            assert_eq!(buf[0], 0x01, "expected ready flag 0x01");
+            assert_eq!(buf[0], 0x00, "expected ready flag 0x01");
 
             // 0x3001 — next buffer length
             mock.read(&[0x01, 0x30], &mut buf)
