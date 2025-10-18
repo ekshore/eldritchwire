@@ -119,7 +119,10 @@ fn build_parse_command_fn(name: &Ident, commands: &Vec<CommandMetaData>) -> Toke
         pub fn parse_command(command_data: CommandData) -> Result<#name, EldritchError> {
             match command_data.parameter() {
                 #(#match_branches)*
-                _ => Err(EldritchError::InvalidCommandData),
+                _ => Err(EldritchError::InvalidCommandData {
+                    message: String::from("No command matches found"),
+                    data: command_data.raw().to_vec()
+                }),
             }
         }
     }
@@ -129,13 +132,17 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
     let command_name = &command.name;
     let data_type = command.data_type;
 
+    // TODO this is duplicate code and should be removed.
     if let Some(0x00) = data_type {
         return quote! {
             Ok(#name::#command_name{
                 operation: if *command_data.operation() == 0 {
                     Operation::Assign
                 } else {
-                    return Err(EldritchError::InvalidCommandData);
+                    return Err(EldritchError::InvalidCommandData {
+                        message: String::from("Bad operation for data type, can't increment a bool"),
+                        data: command_data.raw().to_vec()
+                    });
                 },
                 data: command_data.data_buff()[0] != 0,
             })
@@ -148,7 +155,10 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
                     operation: if *command_data.operation() == 0 {
                         Operation::Assign
                     } else {
-                        return Err(EldritchError::InvalidCommandData);
+                        return Err(EldritchError::InvalidCommandData {
+                            message: String::from("Bad operation for data type, cant' increment a bool"),
+                            data: command_data.raw().to_vec()
+                        });
                     },
                     data: command_data.data_buff()[0] != 0,
                 })
@@ -164,11 +174,20 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
                     operation: if *command_data.operation() == 0 {
                         Operation::Assign
                     } else {
-                        return Err(EldritchError::InvalidCommandData);
+                        return Err(EldritchError::InvalidCommandData {
+                            message: String::from("Bad operation for data type, can't increment a string"),
+                            data: command_data.raw().to_vec()
+                        });
                     },
                     data: String::from_utf8(command_data.data_buff().try_into()
-                              .map_err(|_| EldritchError::InvalidCommandData)?)
-                        .map_err(|_| EldritchError::InvalidCommandData)?
+                              .map_err(|_| EldritchError::InvalidCommandData {
+                                  message: String::from("Unable to convert data to vec"),
+                                  data: command_data.raw().to_vec()
+                              })?)
+                        .map_err(|_| EldritchError::InvalidCommandData {
+                            message: String::from("Bad String data"),
+                            data: command_data.raw().to_vec()
+                        })?
                 })
             }
         }
@@ -216,8 +235,16 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
             .map(|(idx, ident)| {
                 let s_idx = idx * data_size;
                 let e_idx = s_idx + data_size;
-                quote! { #ident: #data_parser(data[#s_idx..#e_idx].try_into().map_err(|_| EldritchError::InvalidCommandData)?), }
-        })
+                let error_msg = format!(
+                    "Failed to convert raw data into correct shape for inner data point: {ident}"
+                );
+                quote! { #ident: #data_parser(data[#s_idx..#e_idx].try_into()
+                    .map_err(|_| EldritchError::InvalidCommandData {
+                        message: String::from(#error_msg),
+                        data: command_data.raw().to_vec()
+                    })?),
+                }
+            })
             .collect();
         quote! {
             let data = command_data.data_buff();
@@ -232,7 +259,10 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
                 let data = #data_parser(data);
                 #data_assignment
             } else {
-                Err(EldritchError::InvalidCommandData)
+                Err(EldritchError::InvalidCommandData {
+                    message: String::from("Failed to convert raw data into correct shape"),
+                    data: command_data.raw().to_vec(),
+                })
             }
         }
     };
@@ -241,7 +271,10 @@ fn build_variant_parser(name: &Ident, command: &CommandMetaData) -> TokenStream 
         if *command_data.data_type() == #data_type {
             #data_parser
         } else {
-            Err(EldritchError::InvalidCommandData)
+            Err(EldritchError::InvalidCommandData {
+                message: String::from("Invalid Data type for command"),
+                data: command_data.raw().to_vec(),
+            })
         }
     }
 }

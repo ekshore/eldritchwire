@@ -35,9 +35,16 @@ pub struct CommandData<'a> {
 impl<'a> CommandData<'a> {
     pub fn new(bytes: &'a [u8]) -> Result<Self, EldritchError> {
         if bytes.len() < 3 {
-            return Err(EldritchError::InvalidCommandData);
+            return Err(EldritchError::InvalidCommandData {
+                message: "Package to short".into(),
+                data: bytes.to_vec(),
+            });
         }
         Ok(Self { bytes })
+    }
+
+    pub fn raw(&self) -> &[u8] {
+        self.bytes
     }
 }
 
@@ -85,7 +92,10 @@ pub fn parse_command(cmd_buffer: &[u8]) -> Result<Command, EldritchError> {
         };
         Ok(command)
     } else {
-        Err(EldritchError::InvalidCommandData)
+        Err(EldritchError::InvalidCommandData {
+            message: "No matching command group".into(),
+            data: cmd_buffer.to_vec(),
+        })
     }
 }
 
@@ -225,6 +235,44 @@ mod test {
             );
         } else {
             panic!();
+        }
+    }
+
+    mod debug_examples {
+        use super::lens_commands;
+        use super::Command;
+        use crate::Operation;
+
+        #[test]
+        fn packet_command() {
+            let cmd_data: [u8; 6] = [0x00, 0x02, 0x80, 0x00, 0x8D, 0x1C];
+            if let Ok(cmd_data) = super::parse_command(&cmd_data) {
+                assert_eq!(
+                    cmd_data,
+                    super::Command::Lens(lens_commands::LensCommand::ApatureFStop {
+                        operation: Operation::Assign,
+                        data: crate::FixedPointDecimal {
+                            raw_val: 0x1c8d_u16 as i16
+                        }
+                    })
+                );
+            } else {
+                panic!();
+            }
+            assert!(true);
+        }
+
+        #[test]
+        fn bug_nd_filter_stop_command() {
+            let cmd_data: [u8; 6] = [0x01, 0x10, 0x80, 0x00, 0x00, 0x00];
+            if let Ok(cmd) = super::parse_command(&cmd_data) {
+                assert_eq!(
+                    cmd,
+                    Command::Video(super::video_commands::VideoCommand::NDFilterStop)
+                );
+            } else {
+                panic!();
+            }
         }
     }
 }

@@ -165,7 +165,13 @@ mod lens_commands_tests {
         let command_data = [0x00, 0x04, 0x01, 0x00, 0x10, 0x27];
         let command_data = CommandData::new(&command_data).expect("Should parse");
         let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::InvalidCommandData));
+        assert_eq!(
+            command,
+            Err(EldritchError::InvalidCommandData {
+                message: String::from("Invalid Data type for command"),
+                data: vec![0x00, 0x04, 0x01, 0x00, 0x10, 0x27],
+            })
+        );
     }
 
     #[test]
@@ -237,7 +243,13 @@ mod lens_commands_tests {
         let command_data = [0x00, 0x07, 0x01, 0x00, 0x10, 0x00];
         let command_data = CommandData::new(&command_data).expect("Should parse");
         let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::InvalidCommandData));
+        assert_eq!(
+            command,
+            Err(EldritchError::InvalidCommandData {
+                message: String::from("Invalid Data type for command"),
+                data: vec![0x00, 0x07, 0x01, 0x00, 0x10, 0x00],
+            })
+        );
     }
 
     #[test]
@@ -277,7 +289,13 @@ mod lens_commands_tests {
         let command_data = [0x00, 0x08, 0x01, 0x00, 0xcc, 0x08];
         let command_data = CommandData::new(&command_data).expect("Known good packet");
         let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::InvalidCommandData));
+        assert_eq!(
+            command,
+            Err(EldritchError::InvalidCommandData {
+                message: String::from("Invalid Data type for command"),
+                data: vec![0x00, 0x08, 0x01, 0x00, 0xcc, 0x08]
+            })
+        );
     }
 
     #[test]
@@ -301,7 +319,13 @@ mod lens_commands_tests {
         let command_data = [0x00, 0x09, 0x01, 0x00, 0xcc, 0x08];
         let command_data = CommandData::new(&command_data).expect("Known good packet");
         let command = super::parse_command(command_data);
-        assert_eq!(command, Err(EldritchError::InvalidCommandData));
+        assert_eq!(
+            command,
+            Err(EldritchError::InvalidCommandData {
+                message: String::from("Invalid Data type for command"),
+                data: vec![0x00, 0x09, 0x01, 0x00, 0xcc, 0x08]
+            })
+        );
     }
 
     #[allow(unexpected_cfgs)]
