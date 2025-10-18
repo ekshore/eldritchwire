@@ -1,3 +1,5 @@
+#[cfg(not(feature = "ignore-nd-filter"))]
+use crate::FixedPointDecimal;
 use crate::{error::EldritchError, Operation};
 use eldritchwire_macros::CommandGroup;
 
@@ -53,6 +55,20 @@ pub enum VideoCommand {
     #[allow(clippy::upper_case_acronyms)]
     #[command(parameter(0x0e), data_type(3), bounds(lower(0), upper(2147483647)))]
     ISO { operation: Operation, data: i32 },
+    #[command(parameter(0x0f), data_type(1), data(selected, enabled))]
+    DisplayLUT {
+        operation: Operation,
+        data: DisplayLUTData,
+    },
+    #[cfg(not(feature = "ignore-nd-filter"))]
+    #[command(parameter(0x10), data_type(128), data(stop, display_mode))]
+    NDFilterStop {
+        operation: Operation,
+        data: NDFilterStopData,
+    },
+    #[cfg(feature = "ignore-nd-filter")]
+    #[command(parameter(0x10))]
+    NDFilterStop,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -77,4 +93,17 @@ pub struct RecordingFormatData {
     pub frame_width: i16,
     pub frame_height: i16,
     pub flags: i16,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DisplayLUTData {
+    selected: i8,
+    enabled: i8,
+}
+
+#[cfg(not(feature = "ignore-nd-filter"))]
+#[derive(Clone, Debug, PartialEq)]
+pub struct NDFilterStopData {
+    stop: FixedPointDecimal,
+    display_mode: FixedPointDecimal,
 }

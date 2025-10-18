@@ -14,5 +14,6 @@ keywords = ["Blackmagic", "sdi", "camera_control", "bdm", "parsing"]
 eldritchwire_macros = { version = "0.2.0", path = "../eldritchwire_macros" }
 
 [features]
-"default" = ["bounds-checked"]
+"default" = ["bounds-checked", "ignore-nd-filter"]
 "bounds-checked" = []
+"ignore-nd-filter" = []
