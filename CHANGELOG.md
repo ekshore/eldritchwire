@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - End of packet padding bug; The last command in the packets I sampled off the shader board was missing some padding.
+- End of packet command data bug.
 
 ### Added
 - DisplayLUT Command

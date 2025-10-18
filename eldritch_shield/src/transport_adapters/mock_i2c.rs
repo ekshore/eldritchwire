@@ -55,13 +55,22 @@ impl MockI2c {
         }
     }
 
+    fn has_next_buffer(&self) -> bool {
+        self.current_index < self.data_buffers.len()
+    }
+
     fn read_from_register(&mut self, reg_le: &[u8; 2], buffer: &mut [u8]) -> io::Result<()> {
         let reg = u16::from_le_bytes(*reg_le);
+        println!("Mock reading from register {reg:02x}");
 
         match reg {
             0x3000 => {
                 buffer.fill(0);
-                buffer[0] = 0x01; // ready flag
+                buffer[0] = if self.has_next_buffer() {
+                    0x00 // arm flag is cleared
+                } else {
+                    0x01
+                };
                 Ok(())
             }
             0x3001 => {
@@ -98,9 +107,9 @@ impl I2cTransport for MockI2c {
         Ok(())
     }
 
-    fn read(&mut self, _addr: &[u8; 2], buffer: &mut [u8]) -> Result<(), Self::Error> {
+    fn read(&mut self, addr: &[u8; 2], buffer: &mut [u8]) -> Result<(), Self::Error> {
         // For direct read calls, we’ll just clear the buffer
-        self.read_from_register(_addr, buffer)
+        self.read_from_register(addr, buffer)
     }
 }
 
