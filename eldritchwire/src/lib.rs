@@ -491,7 +491,7 @@ mod packet_data_test {
             0x01, 0x00, 0x08, 0x00, 0x00,
         ];
         let result = parse_frame_packet(cmd_data.to_vec());
-        let commands = result.unwrap();
+        let _commands = result.unwrap();
     }
 
     #[test]
@@ -517,7 +517,7 @@ mod packet_data_test {
             0x00, 0x08, 0x04, 0x06, 0x00, 0x00, 0x08, 0x05, 0x80, 0x00, 0x00, 0x08, 0x00,
         ];
         let result = parse_frame_packet(cmd_data.to_vec());
-        let commands = result.unwrap();
+        let _commands = result.unwrap();
     }
 
     #[test]
@@ -527,7 +527,7 @@ mod packet_data_test {
             0x00, 0x00, 0x00, 0x02, 0x80, 0x00, 0x07, 0x21, 0x00,
         ];
         let result = parse_frame_packet(cmd_data.to_vec());
-        let commands = result.unwrap();
+        let _commands = result.unwrap();
     }
 }
 
