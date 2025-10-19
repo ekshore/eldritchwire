@@ -61,7 +61,6 @@ impl MockI2c {
 
     fn read_from_register(&mut self, reg_le: &[u8; 2], buffer: &mut [u8]) -> io::Result<()> {
         let reg = u16::from_le_bytes(*reg_le);
-        println!("Mock reading from register {reg:02x}");
 
         match reg {
             0x3000 => {

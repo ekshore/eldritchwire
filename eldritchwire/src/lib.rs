@@ -132,12 +132,6 @@ impl PacketData {
     fn get_slice(&mut self, slice_len: u8) -> Result<&[u8], EldritchError> {
         let new_cur = self.cursor + slice_len;
         if usize::from(new_cur) > self.data.len() {
-            println!(
-                "Number of bytes in packet: {}, new cursor: {}, slice length: {}",
-                self.data.len(),
-                new_cur,
-                slice_len
-            );
             return Err(EldritchError::EndOfPacket);
         }
         let slice_data = &self.data[usize::from(self.cursor)..usize::from(new_cur)];
@@ -152,10 +146,10 @@ pub fn parse_frame_packet(data: Vec<u8>) -> Result<Vec<AddressedCommand>, Eldrit
 
     while packet.has_data() {
         let header = packet.parse_header()?;
-        println!("Command Header: {header:?}");
+        // println!("Command Header: {header:?}");
         match packet.get_slice(header.command_length) {
             Ok(command_data) => {
-                println!("Command Data: {command_data:?}");
+                // println!("Command Data: {command_data:?}");
                 commands.push(AddressedCommand {
                     device_id: header.device_id,
                     command: commands::parse_command(command_data)?,
