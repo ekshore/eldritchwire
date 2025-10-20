@@ -23,7 +23,7 @@ jobs:
     - name: Format Check
       run: cargo fmt --check
 
-  build-raspberry-pi:
+  raspberry-pi-build:
     runs-on: ubuntu-latest
 
     steps:
