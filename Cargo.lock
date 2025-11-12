@@ -4,21 +4,21 @@ version = 4
 
 [[package]]
 name = "eldritch_shield"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "rppal",
 ]
 
 [[package]]
 name = "eldritchwire"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "eldritchwire_macros",
 ]
 
 [[package]]
 name = "eldritchwire_macros"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "proc-macro2",
  "quote",
