@@ -1,4 +1,4 @@
-mod commands;
+pub mod commands;
 mod error;
 use commands::Command;
 use error::EldritchError;
@@ -6,8 +6,8 @@ use std::fmt::Debug;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AddressedCommand {
-    device_id: u8,
-    command: Command,
+    pub device_id: u8,
+    pub command: Command,
 }
 
 #[derive(Clone, PartialEq, PartialOrd)]
