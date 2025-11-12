@@ -112,9 +112,9 @@ jobs:
         id: get_version
         run: |
           git fetch --tags
-          latest-tag=$(git describe --abbrev=0 --tag)
+          latest_tag=$(git describe --abbrev=0 --tag)
           echo "Latest Tag: $latest-tag"
-          echo "tag=$latest-tag" >> $GITHUB_OUTPUT
+          echo "tag=$latest_tag" >> $GITHUB_OUTPUT
 
       - name: Extract changelog entry
         id: changelog
