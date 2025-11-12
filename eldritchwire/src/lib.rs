@@ -170,7 +170,7 @@ pub fn parse_frame_packet(data: Vec<u8>) -> Result<Vec<AddressedCommand>, Eldrit
 }
 
 fn calculate_padding_length(command_length: u8) -> u8 {
-    if command_length % 4 == 0 {
+    if command_length.is_multiple_of(4) {
         0
     } else {
         4 - (command_length % 4)
@@ -178,7 +178,7 @@ fn calculate_padding_length(command_length: u8) -> u8 {
 }
 
 fn verify_padding(padding: &[u8], command_length: u8) -> Result<(), EldritchError> {
-    if (padding.len() + usize::from(command_length)) % 4 > 0 {
+    if !(padding.len() + usize::from(command_length)).is_multiple_of(4) {
         return Err(EldritchError::PaddingViolation(String::from(
             "Padding length is incorrect",
         )));

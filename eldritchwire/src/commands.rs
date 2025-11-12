@@ -259,7 +259,6 @@ mod test {
             } else {
                 panic!();
             }
-            assert!(true);
         }
 
         #[test]

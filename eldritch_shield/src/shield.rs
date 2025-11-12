@@ -23,7 +23,7 @@ where
     pub fn get_identity(&mut self) -> Result<String, ShieldError<E>> {
         let mut buff = [0u8; registers::IDENTITY.length];
         self.i2c.read(&registers::IDENTITY.address, &mut buff)?;
-        Ok(String::from_utf8(buff.to_vec()).map_err(|_| ShieldError::InvalidResponse)?)
+        String::from_utf8(buff.to_vec()).map_err(|_| ShieldError::InvalidResponse)
     }
 
     pub fn get_hardware_version(&mut self) -> Result<(u8, u8), ShieldError<E>> {
@@ -115,7 +115,7 @@ where
 
     pub fn set_output_control_data(&mut self, data: &[u8]) -> Result<(), ShieldError<E>> {
         self.i2c
-            .write(&registers::OUTPUT_CONTROL_DATA.address, &data)?;
+            .write(&registers::OUTPUT_CONTROL_DATA.address, data)?;
         Ok(())
     }
 
@@ -168,7 +168,7 @@ where
 
     pub fn set_output_tally_data(&mut self, data: &[u8]) -> Result<(), ShieldError<E>> {
         self.i2c
-            .write(&registers::OUTPUT_TALLY_DATA.address, &data)?;
+            .write(&registers::OUTPUT_TALLY_DATA.address, data)?;
         Ok(())
     }
 
