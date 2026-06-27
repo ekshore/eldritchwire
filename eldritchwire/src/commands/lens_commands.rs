@@ -14,10 +14,10 @@ pub enum LensCommand {
     #[command(parameter(0x01))]
     InstantaneousAutoFocus,
 
-    #[command(parameter(0x02), data_type(128), bounds(lower(-1.0), upper(16.0)))]
+    #[command(parameter(0x02), data_type(128), data(aperture_value), bounds(lower(-1.0), upper(16.0)))]
     ApertureFStop {
         operation: Operation,
-        data: FixedPointDecimal,
+        data: ApertureFStopData,
     },
 
     #[command(parameter(0x03), data_type(128), bounds(lower(0.0), upper(1.0)))]
@@ -49,6 +49,21 @@ pub enum LensCommand {
         operation: Operation,
         data: FixedPointDecimal,
     },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ApertureFStopData {
+    pub aperture_value: FixedPointDecimal,
+}
+
+impl ApertureFStopData {
+    pub fn f_stop(&self) -> f32 {
+        2_f32.powf(self.aperture_value.get_real_val() / 2_f32)
+    }
+
+    pub fn get_real_val(&self) -> f32 {
+        self.aperture_value.get_real_val()
+    }
 }
 
 #[cfg(test)]
@@ -104,8 +119,10 @@ mod lens_commands_tests {
             command,
             Ok(LensCommand::ApertureFStop {
                 operation: Operation::Assign,
-                data: FixedPointDecimal {
-                    raw_val: 0xfd9au16 as i16
+                data: ApertureFStopData {
+                    aperture_value: FixedPointDecimal {
+                        raw_val: 0xfd9au16 as i16
+                    }
                 }
             })
         );
@@ -123,8 +140,10 @@ mod lens_commands_tests {
             command,
             Ok(LensCommand::ApertureFStop {
                 operation: Operation::Assign,
-                data: FixedPointDecimal {
-                    raw_val: 0x7fffu16 as i16
+                data: ApertureFStopData {
+                    aperture_value: FixedPointDecimal {
+                        raw_val: 0x7fffu16 as i16
+                    }
                 }
             })
         );

@@ -251,8 +251,10 @@ mod test {
                     cmd_data,
                     super::Command::Lens(lens_commands::LensCommand::ApertureFStop {
                         operation: Operation::Assign,
-                        data: crate::FixedPointDecimal {
-                            raw_val: 0x1c8d_u16 as i16
+                        data: super::lens_commands::ApertureFStopData {
+                            aperture_value: crate::FixedPointDecimal {
+                                raw_val: 0x1c8d_u16 as i16
+                            }
                         }
                     })
                 );
