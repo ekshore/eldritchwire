@@ -15,19 +15,19 @@ pub enum LensCommand {
     InstantaneousAutoFocus,
 
     #[command(parameter(0x02), data_type(128), bounds(lower(-1.0), upper(16.0)))]
-    ApatureFStop {
+    ApertureFStop {
         operation: Operation,
         data: FixedPointDecimal,
     },
 
     #[command(parameter(0x03), data_type(128), bounds(lower(0.0), upper(1.0)))]
-    ApatureNormalized {
+    ApertureNormalized {
         operation: Operation,
         data: FixedPointDecimal,
     },
 
     #[command(parameter(0x04), data_type(2), bounds(lower(0)))]
-    ApatureOrdinal { operation: Operation, data: i16 },
+    ApertureOrdinal { operation: Operation, data: i16 },
 
     #[command(parameter(0x05))]
     InstantaneousAutoApature,
@@ -96,13 +96,13 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_apature_fstop_command() {
+    fn parse_aperture_fstop_command() {
         let command_data = [0x00, 0x02, 0x80, 0x00, 0x9a, 0xfd];
         let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::ApatureFStop {
+            Ok(LensCommand::ApertureFStop {
                 operation: Operation::Assign,
                 data: FixedPointDecimal {
                     raw_val: 0xfd9au16 as i16
@@ -112,7 +112,7 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_apature_fstop_command_at_upper_bounds() {
+    fn parse_aperture_fstop_command_at_upper_bounds() {
         // Value 15.9995 (7fff) is right at the limit of the upper bound
         let command_data = [0x00, 0x02, 0x80, 0x00, 0xff, 0x7f];
         let fp = FixedPointDecimal::from_data(&[0x00, 0x80]);
@@ -121,7 +121,7 @@ mod lens_commands_tests {
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::ApatureFStop {
+            Ok(LensCommand::ApertureFStop {
                 operation: Operation::Assign,
                 data: FixedPointDecimal {
                     raw_val: 0x7fffu16 as i16
@@ -131,13 +131,13 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_apature_normalized_assign() {
+    fn parse_aperture_normalized_assign() {
         let command_data = [0x00, 0x03, 0x80, 0x00, 0x00, 0x04];
         let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::ApatureNormalized {
+            Ok(LensCommand::ApertureNormalized {
                 operation: Operation::Assign,
                 data: FixedPointDecimal {
                     raw_val: 0x0400u16 as i16
@@ -147,13 +147,13 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_apature_ordinal_assign() {
+    fn parse_aperture_ordinal_assign() {
         let command_data = [0x00, 0x04, 0x02, 0x00, 0x10, 0x27];
         let command_data = CommandData::new(&command_data).expect("Known good packet data");
         let command = super::parse_command(command_data);
         assert_eq!(
             command,
-            Ok(LensCommand::ApatureOrdinal {
+            Ok(LensCommand::ApertureOrdinal {
                 operation: Operation::Assign,
                 data: 10_000_i16
             })
@@ -161,7 +161,7 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_apature_ordinal_command_bad_data_type() {
+    fn parse_aperture_ordinal_command_bad_data_type() {
         let command_data = [0x00, 0x04, 0x01, 0x00, 0x10, 0x27];
         let command_data = CommandData::new(&command_data).expect("Should parse");
         let command = super::parse_command(command_data);
@@ -175,7 +175,7 @@ mod lens_commands_tests {
     }
 
     #[test]
-    fn parse_auto_apature_command() {
+    fn parse_auto_aperture_command() {
         let command_packet_data = [0x00, 0x05, 0x00, 0x00];
         let command_data = CommandData::new(&command_packet_data).expect("Known good packet data");
         let command = parse_command(command_data);
@@ -352,7 +352,7 @@ mod lens_commands_tests {
         }
 
         #[test]
-        fn parse_apature_fstop_command_below_bounds() {
+        fn parse_aperture_fstop_command_below_bounds() {
             // Value -1.1 (f734) is below the lower bound of -1
             let command_data = [0x00, 0x02, 0x80, 0x00, 0x34, 0xf7];
             let command_data = CommandData::new(&command_data).expect("Known good packet data");
@@ -361,7 +361,7 @@ mod lens_commands_tests {
         }
 
         #[test]
-        fn parse_apature_normalized_command_below_bounds() {
+        fn parse_aperture_normalized_command_below_bounds() {
             // Value -0.1 is below the bound of 0.0
             let command_data = [0x00, 0x03, 0x80, 0x00, 0xff, 0xff];
             let command_data = CommandData::new(&command_data).expect("Known good packet data");
@@ -370,7 +370,7 @@ mod lens_commands_tests {
         }
 
         #[test]
-        fn parse_apature_normalized_command_above_bounds() {
+        fn parse_aperture_normalized_command_above_bounds() {
             // Value 1.1 is above the bound of 1.0
             let command_data = [0x00, 0x03, 0x80, 0x00, 0xcc, 0x08];
             let command_data = CommandData::new(&command_data).expect("Known good command data");
@@ -379,7 +379,7 @@ mod lens_commands_tests {
         }
 
         #[test]
-        fn parse_apature_ordinal_command_assign_below_bounds() {
+        fn parse_aperture_ordinal_command_assign_below_boundj() {
             // Value -1 is below the bound of 0.0
             let command_data = [0x00, 0x04, 0x02, 0x00, 0xff, 0xff];
             let command_data = CommandData::new(&command_data).expect("Known good packet data");

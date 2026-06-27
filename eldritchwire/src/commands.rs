@@ -249,7 +249,7 @@ mod test {
             if let Ok(cmd_data) = super::parse_command(&cmd_data) {
                 assert_eq!(
                     cmd_data,
-                    super::Command::Lens(lens_commands::LensCommand::ApatureFStop {
+                    super::Command::Lens(lens_commands::LensCommand::ApertureFStop {
                         operation: Operation::Assign,
                         data: crate::FixedPointDecimal {
                             raw_val: 0x1c8d_u16 as i16
