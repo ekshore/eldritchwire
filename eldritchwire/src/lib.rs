@@ -8,6 +8,8 @@ use std::fmt::Debug;
 pub struct AddressedCommand {
     pub device_id: u8,
     pub command: Command,
+    #[cfg(feature = "debug")]
+    pub command_data: Vec<u8>,
 }
 
 #[derive(Clone, PartialEq, PartialOrd)]
@@ -153,6 +155,8 @@ pub fn parse_frame_packet(data: Vec<u8>) -> Result<Vec<AddressedCommand>, Eldrit
                 commands.push(AddressedCommand {
                     device_id: header.device_id,
                     command: commands::parse_command(command_data)?,
+                    #[cfg(feature = "debug")]
+                    command_data: Vec::from(command_data),
                 });
             }
             Err(EldritchError::EndOfPacket) => break,

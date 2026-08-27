@@ -15,8 +15,43 @@ pub fn command_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 
     let parse_command_fn = build_parse_command_fn(name, &commands.expect("Commands are expected"));
 
+    let name_str = name.to_string();
+    let variant_names: Result<Vec<TokenStream>> = if let syn::Data::Enum(data) = &input.data {
+        Ok(data
+            .variants
+            .iter()
+            .map(|variant| {
+                let variant_name = variant.ident.to_string();
+                let variant_ident = &variant.ident;
+                let fields: Vec<_> = variant
+                    .fields
+                    .iter()
+                    .map(|field| {
+                        let field = &field.ident;
+                        quote! { #field, }
+                    })
+                    .collect();
+                quote! { #variant_ident { #(#fields)* } => #variant_name, }
+            })
+            .collect())
+    } else {
+        Err(Error::new_spanned(&input, "CommandGroup must be an enum"))
+    };
+
+    let variant_names = variant_names.expect("Commands are expected");
+
     quote! {
         #parse_command_fn
+
+        #[allow(unused_variables)]
+        impl #name {
+            pub fn command_name(&self) -> (&str, &str) {
+                let cmd_name = match self {
+                    #(Self::#variant_names)*
+                };
+                (#name_str, cmd_name)
+            }
+        }
     }
     .into()
 }
