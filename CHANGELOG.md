@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+- Debug Feature
+    crate feature adds command debug data to the `AddressedCommand` struct
+    to allow consuming applications to inspect the command data that was parsed.
+    This byte array does **not** include the commands header data.
+
 ## [0.3.0] - 2026-06-27
 - Fixed typo in the types "Apature" -> "Aperture"
 - Fixed bug in with Aperture FStop: missing sqrt(2^AV) calculation.
