@@ -23,6 +23,20 @@ jobs:
     - name: Format Check
       run: cargo fmt --check
 
+  serde-feat-build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: cargo build --verbose --features serde
+    - name: Run tests
+      run: cargo test --verbose --features mock-i2c --features serde
+    - name: Format Check
+      run: cargo fmt --check
+
+
   raspberry-pi-build:
     runs-on: ubuntu-latest
 
