@@ -5,6 +5,7 @@ use eldritchwire_macros::CommandGroup;
 
 use super::CommandData;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum VideoCommand {
     #[command(
@@ -71,6 +72,7 @@ pub enum VideoCommand {
     NDFilterStop,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct VideoModeData {
     pub frame_rate: i8,
@@ -80,12 +82,14 @@ pub struct VideoModeData {
     pub color_space: i8,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct ManualWhiteBalanceData {
     pub color_temp: i16,
     pub tint: i16,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct RecordingFormatData {
     pub file_frame_rate: i16,
@@ -95,6 +99,7 @@ pub struct RecordingFormatData {
     pub flags: i16,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct DisplayLUTData {
     selected: i8,
@@ -102,6 +107,7 @@ pub struct DisplayLUTData {
 }
 
 #[cfg(not(feature = "ignore-nd-filter"))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct NDFilterStopData {
     stop: FixedPointDecimal,

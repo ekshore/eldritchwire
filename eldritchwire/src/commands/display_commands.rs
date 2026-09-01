@@ -1,6 +1,7 @@
 use crate::{commands::CommandData, EldritchError, FixedPointDecimal, Operation};
 use eldritchwire_macros::CommandGroup;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum DisplayCommand {
     #[command(parameter(0x00), data_type(0x80), bounds(lower(0.0), upper(1.0)))]
@@ -33,6 +34,7 @@ pub enum DisplayCommand {
     },
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct FocusAssistData {
     pub focus_assist_method: i8,

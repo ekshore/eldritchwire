@@ -1,6 +1,7 @@
 use crate::{commands::CommandData, EldritchError, Operation};
 use eldritchwire_macros::CommandGroup;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum ConfigurationCommand {
     #[command(parameter(0x00), data_type(3), data(time, date))]
@@ -19,12 +20,14 @@ pub enum ConfigurationCommand {
     },
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct RealTimeClockData {
     pub time: i32,
     pub date: i32,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct LocationData {
     pub laditude: i64,

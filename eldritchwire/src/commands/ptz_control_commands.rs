@@ -1,6 +1,7 @@
 use crate::{commands::CommandData, EldritchError, FixedPointDecimal, Operation};
 use eldritchwire_macros::CommandGroup;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum PtzControlCommand {
     #[command(parameter(0x00), data_type(0x80), data(pan_velocity, tilt_velocity))]
@@ -15,12 +16,14 @@ pub enum PtzControlCommand {
     },
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct PanTiltVelocityData {
     pub pan_velocity: FixedPointDecimal,
     pub tilt_velocity: FixedPointDecimal,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct MemoryPresetData {
     pub preset_command: i8,

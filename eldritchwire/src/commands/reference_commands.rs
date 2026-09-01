@@ -1,6 +1,7 @@
 use crate::{commands::CommandData, EldritchError, Operation};
 use eldritchwire_macros::CommandGroup;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum ReferenceCommand {
     #[command(parameter(0x00), data_type(1), bounds(lower(0), upper(1)))]

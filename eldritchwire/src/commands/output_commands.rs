@@ -1,6 +1,7 @@
 use crate::{commands::CommandData, EldritchError, FixedPointDecimal, Operation};
 use eldritchwire_macros::CommandGroup;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum OutputCommand {
     #[command(parameter(0x00), data_type(2))]
@@ -28,6 +29,7 @@ pub enum OutputCommand {
     },
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct OverlaysData {
     pub frame_guide_style: i8,

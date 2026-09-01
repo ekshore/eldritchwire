@@ -1,6 +1,7 @@
 use crate::{commands::CommandData, EldritchError, Operation};
 use eldritchwire_macros::CommandGroup;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum MediaCommand {
     #[command(parameter(0x00), data_type(1), data(basic_codec, codec_varient))]
@@ -19,12 +20,14 @@ pub enum MediaCommand {
     },
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct CodecData {
     pub basic_codec: i8,
     pub codec_varient: i8,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct TransportModeData {
     pub mode: i8,

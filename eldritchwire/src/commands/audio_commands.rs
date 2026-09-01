@@ -2,6 +2,7 @@ use super::CommandData;
 use crate::{EldritchError, FixedPointDecimal, Operation};
 use eldritchwire_macros::CommandGroup;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum AudioCommand {
     #[command(parameter(0x00), data_type(0x80), bounds(lower(0.0), upper(1.0)))]
@@ -35,6 +36,7 @@ pub enum AudioCommand {
     PhantomPower { operation: Operation, data: bool },
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct InputLevelsData {
     pub channel_one: FixedPointDecimal,

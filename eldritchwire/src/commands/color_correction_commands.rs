@@ -1,6 +1,7 @@
 use crate::{commands::CommandData, EldritchError, FixedPointDecimal, Operation};
 use eldritchwire_macros::CommandGroup;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum ColorCorrectionCommand {
     #[command(parameter(0x00), data_type(0x80), data(red, green, blue, luma))]
@@ -42,6 +43,7 @@ pub enum ColorCorrectionCommand {
     CorrectionResetDefault,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct RedGreenBlueLuma {
     pub red: FixedPointDecimal,
@@ -50,12 +52,14 @@ pub struct RedGreenBlueLuma {
     pub luma: FixedPointDecimal,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct ContrastAdjustData {
     pub pivot: FixedPointDecimal,
     pub adj: FixedPointDecimal,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct ColorAdjustData {
     pub hue: FixedPointDecimal,

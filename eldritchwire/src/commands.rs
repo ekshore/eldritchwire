@@ -12,6 +12,7 @@ pub mod video_commands;
 
 use crate::error::EldritchError;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     Lens(lens_commands::LensCommand),

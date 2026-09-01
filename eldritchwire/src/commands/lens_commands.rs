@@ -3,6 +3,7 @@ use eldritchwire_macros::CommandGroup;
 
 use super::CommandData;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq, CommandGroup)]
 pub enum LensCommand {
     #[command(parameter(0x00), data_type(128), bounds(lower(0.0), upper(1.0)))]
@@ -51,6 +52,7 @@ pub enum LensCommand {
     },
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct ApertureFStopData {
     pub aperture_value: FixedPointDecimal,

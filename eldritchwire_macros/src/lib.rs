@@ -45,7 +45,7 @@ pub fn command_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 
         #[allow(unused_variables)]
         impl #name {
-            pub fn command_name(&self) -> (&str, &str) {
+            pub fn command_name(&self) -> (&'static str, &'static str) {
                 let cmd_name = match self {
                     #(Self::#variant_names)*
                 };

@@ -4,6 +4,7 @@ use commands::Command;
 use error::EldritchError;
 use std::fmt::Debug;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct AddressedCommand {
     pub device_id: u8,
@@ -12,6 +13,7 @@ pub struct AddressedCommand {
     pub command_data: Vec<u8>,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, PartialEq, PartialOrd)]
 pub struct FixedPointDecimal {
     raw_val: i16,
@@ -64,6 +66,7 @@ impl PartialOrd<f32> for FixedPointDecimal {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
     Assign,
@@ -71,6 +74,7 @@ pub enum Operation {
     Toggle,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 struct CommandHeader {
     device_id: u8,
@@ -78,6 +82,7 @@ struct CommandHeader {
     command_id: u8,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, PartialEq)]
 struct PacketData {
     data: Vec<u8>,
