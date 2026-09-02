@@ -16,9 +16,6 @@ on:
           - alpha
           - beta
           - rc
-  # push:
-  #   branches:
-  #     - main
 
 jobs:
   build:
