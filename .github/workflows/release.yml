@@ -111,10 +111,12 @@ jobs:
       - name: Extract version from tag
         id: get_version
         run: |
+          git pull
           git fetch --tags
           latest_tag=$(git describe --abbrev=0 --tag)
-          echo "Latest Tag: $latest-tag"
-          echo "tag=$latest_tag" >> $GITHUB_OUTPUT
+          echo "Checking out latest tag: $latest_tag"
+          git checkout refs/tags/$latest_tag
+          echo "version=$latest_tag" >> $GITHUB_OUTPUT
 
       - name: Extract changelog entry
         id: changelog
