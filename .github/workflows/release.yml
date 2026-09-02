@@ -96,6 +96,9 @@ jobs:
             --execute \
             --no-confirm
 
+      - name: Git Push to compensate for cargo-release bug
+        run: git push
+
   github-release:
     runs-on: ubuntu-latest
     needs: release
